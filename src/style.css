@@ -452,3 +452,57 @@ button {
 .link-btn:hover {
   text-decoration: underline;
 }
+
+/* ─── Sidebar reference section ─────────────────────────────────────────── */
+.sidebar-section-label {
+  margin: 1rem 0 0.35rem;
+  padding: 0 0.5rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ─── System Design Concepts glossary ──────────────────────────────────── */
+.concept-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.concept-group {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem 0.6rem;
+}
+.concept-group-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.concept-item-list {
+  display: flex;
+  flex-direction: column;
+}
+.concept-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.concept-item:last-child {
+  border-bottom: none;
+}
+.concept-term {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.concept-def {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}

@@ -6,6 +6,7 @@ import { Logger } from "./logger";
 Logger.install();
 
 import { PATTERNS, findProblem } from "./data/curriculum";
+import { ARCHITECTURE_CATEGORIES, ARCHITECTURE_CONCEPT_COUNT } from "./data/architecture";
 import type { Pattern } from "./data/types";
 import { runTests, formatValue, type RunResult } from "./runner";
 import { isSolved, markSolved, countSolved } from "./progress";
@@ -14,6 +15,7 @@ import { isSolved, markSolved, countSolved } from "./progress";
 
 type Route =
   | { view: "list" }
+  | { view: "concepts" }
   | { view: "pattern"; patternId: string }
   | { view: "subpattern"; patternId: string; subId: string }
   | { view: "problem"; problemId: string };
@@ -21,6 +23,9 @@ type Route =
 function parseRoute(): Route {
   const hash = location.hash.replace(/^#\/?/, "");
   const parts = hash.split("/").filter(Boolean);
+  if (parts[0] === "concepts") {
+    return { view: "concepts" };
+  }
   if (parts[0] === "pattern" && parts[1] && parts[2] === "sub" && parts[3]) {
     return { view: "subpattern", patternId: parts[1], subId: parts[3] };
   }
@@ -96,20 +101,60 @@ function renderSidebar(route: Route): string {
     `;
   }).join("");
 
+  const conceptsActive = route.view === "concepts" ? " active" : "";
+
   return `
     <a class="brand" href="#/">
       <span class="brand-mark">&lt;/&gt;</span>
       <span>DSA Study Buddy</span>
     </a>
     <div class="sidebar-list">${items}</div>
+    <div class="sidebar-section-label">Reference</div>
+    <a class="sidebar-item${conceptsActive}" href="#/concepts">
+      <span class="sidebar-index">&#9733;</span>
+      <span class="sidebar-name">System Design Concepts</span>
+      <span class="sidebar-progress sidebar-progress--stub">${ARCHITECTURE_CONCEPT_COUNT}</span>
+    </a>
   `;
 }
 
 function renderContent(route: Route): string {
   if (route.view === "list") return renderPatternList();
+  if (route.view === "concepts") return renderConceptsPage();
   if (route.view === "pattern") return renderPatternDetail(route.patternId);
   if (route.view === "subpattern") return renderSubpatternDetail(route.patternId, route.subId);
   return renderProblemDetail(route.problemId);
+}
+
+function renderConceptsPage(): string {
+  const groups = ARCHITECTURE_CATEGORIES.map((cat) => {
+    const rows = cat.concepts
+      .map(
+        (c) => `
+          <div class="concept-item">
+            <span class="concept-term">${escapeHtml(c.term)}</span>
+            <span class="concept-def">${escapeHtml(c.definition)}</span>
+          </div>
+        `
+      )
+      .join("");
+    return `
+      <section class="concept-group">
+        <h3 class="concept-group-title">${escapeHtml(cat.name)}</h3>
+        <div class="concept-item-list">${rows}</div>
+      </section>
+    `;
+  }).join("");
+
+  return `
+    <h1>System Design Concepts</h1>
+    <p class="lead">
+      Architecture-level concepts to know before building any scalable application. Coding interviews test the
+      16 patterns; system-design interviews test these. A quick-reference glossary &mdash; ${ARCHITECTURE_CONCEPT_COUNT}
+      terms across ${ARCHITECTURE_CATEGORIES.length} areas. You don't need them all today &mdash; keep learning, keep building.
+    </p>
+    <div class="concept-groups">${groups}</div>
+  `;
 }
 
 function renderPatternList(): string {
