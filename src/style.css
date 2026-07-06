@@ -433,6 +433,52 @@ button {
   color: var(--danger);
 }
 
+.buddy-rag-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.buddy-rag-toggle input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+/* ─── Feed the Brain (v3 RAG) ───────────────────────────────────────────── */
+
+.ingest-title-input {
+  width: 100%;
+  background: #0b0d11;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.6rem;
+}
+.ingest-title-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.brain-chunk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+.brain-chunk {
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.brain-chunk strong {
+  color: var(--text);
+}
+
 /* ─── Footer ──────────────────────────────────────────────────────────── */
 
 .app-footer {

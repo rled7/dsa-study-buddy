@@ -11,7 +11,7 @@ the last:
 |---|---|---|
 | **v1** | Curriculum browser, practice problems, in-browser JS test runner, localStorage progress tracking, crash-visibility logging, and a **stubbed** "Ask the Buddy" panel | ✅ this repo |
 | **v2** | Wires the buddy panel to a **local LLM via Ollama** (offline, no API keys) so it can actually answer questions about the problem you're looking at | ✅ this repo |
-| **v3** | Adds a **growing local RAG brain**: a small distilled knowledge base (textbook → distilled notes → embeddings → local vector DB) the buddy can search before answering, so it gets better over time without needing a bigger model | not started |
+| **v3** | Adds a **growing local RAG brain**: paste in notes/excerpts → chunked → embedded locally → stored in-browser, so the buddy can retrieve relevant material before answering, and gets better over time without needing a bigger model | ✅ this repo |
 
 ## v2 — Ask the Buddy (local LLM via Ollama)
 
@@ -43,6 +43,39 @@ have more headroom, a 14B variant is a drop-in `ollama pull`/model-name swap in 
 The v1 UI already had a dedicated "Ask the Buddy" panel, form, and response area wired up as a
 stub; v2 replaced the stub handler in `wireBuddyPanelEvents()` (`src/main.ts`) with the real
 Ollama call above — no UI rework was needed, as planned.
+
+## v3 — Feed the Brain (growing local RAG)
+
+A new **"Feed the Brain"** page (`#/brain`) lets you paste in notes or textbook excerpts. Each
+paste is chunked (by paragraph, packed to ~800 chars, falling back to sentence-splitting for long
+paragraphs), embedded locally via Ollama's `nomic-embed-text` model, and stored in this browser's
+IndexedDB (`dsa_study_buddy_brain` / `chunks` store) — nothing leaves your machine, no server.
+
+When you ask the buddy a question with the new **"Use the brain"** checkbox on, the question
+itself gets embedded, compared against every stored chunk via cosine similarity (plain JS, no
+vector DB library), and the top 3 matches are injected into the model's prompt ahead of the
+current-problem context, with explicit priority framing ("these are the user's own saved notes,
+ground truth, take priority over the problem below").
+
+**Deliberate deviation from the original locked spec:** the spec named sqlite-vec/LanceDB for the
+vector store. Both need a backend process, which would break this app's static `base: './'`
+build (drop `dist/` anywhere, no server, no account). At this app's scale — a personal notes
+corpus, not a search engine — IndexedDB + a linear cosine scan is exactly as correct and keeps
+the "no server" promise intact. Swap to a real vector DB only if the corpus grows into the
+hundreds of thousands of chunks.
+
+**Deliberately NOT LLM-distilled per chunk:** the spec's "distill each chunk" step is skipped for
+now — distilling means a full 7B generation call per paragraph (slow for anything but tiny
+inputs), and distilling before embedding can strip the exact wording a later query needs to match
+on. Raw-but-chunked text is embedded directly. A distilled *display* copy (kept separate from
+what's embedded) is a fair future refinement.
+
+**What proves retrieval actually works (not just that "an answer came back"):** a top-K match
+returning something doesn't prove the brain contributed anything — the model might answer
+correctly from its own training either way. The real test: ingest a fact the base model cannot
+possibly know, then ask about it with the toggle off (expect an ignorant/generic answer) and on
+(expect the specific ingested detail, verbatim-adjacent). See "Verification (v3)" below — this is
+the check that actually discriminates a working RAG loop from a decorative one.
 
 ## What's in v1
 
@@ -154,10 +187,39 @@ pulled. Confirmed:
    and the form re-enables afterward instead of getting stuck — verified before restarting the
    service.
 
+## Verification (v3)
+
+Same headless-Chrome/CDP approach. First confirmed CORS/shape for Ollama's `/api/embed`
+(768-dim vectors from `nomic-embed-text`) via a real in-page `fetch`, not just `curl`. Then the
+discriminating test:
+
+1. On `#/brain`, ingested a fabricated, never-published technique ("the Vorlath Sweep" — a
+   two-pointer technique that doubles its window on a duplicate and resets to 1 on the next
+   unique pair). Confirmed 1 chunk stored, visible in the chunk list.
+2. On the Two Sum problem page, asked "What is the Vorlath Sweep technique and how exactly does
+   its window size change over time?" with **"Use the brain" unchecked**: the model correctly
+   had no idea, called it unrelated to Two Sum, and tried to redirect to the actual problem.
+3. Same question with **"Use the brain" checked**: the model correctly described the doubling
+   and reset behavior, matching the ingested text almost verbatim (and even generated its own
+   consistent example) — proof retrieval actually fed real content into the prompt, not just
+   that a plausible-looking answer came back.
+4. Captured the actual outgoing `/api/chat` request body over the CDP Network domain to confirm
+   the retrieved chunk was really in the prompt (not just an accidental correct guess).
+5. Clearing the brain removed the stored chunk (count → 0 in both the chunk list and the sidebar
+   badge) and disabled the "Use the brain" checkbox again.
+
+**One tuning note surfaced by this test:** the first attempt at prompt phrasing ("relevant notes
+— may or may not be relevant, use judgment") caused the model to ignore the injected fact in
+favor of the concurrently-present current-problem context. Reordering the prompt (brain notes
+before the current-problem section) and adding explicit priority language ("these take priority
+over the problem below") fixed it. Left as a comment in `askBuddy` (`src/main.ts`) since it's a
+non-obvious, model-behavior-driven constraint, not just a style choice.
+
 ## Notes
 
 - No network calls beyond `localhost` (Ollama), no external dependencies beyond Vite/TypeScript
   tooling and Ollama itself.
 - Editor is a plain `<textarea>` for v1 — good enough to write and test short solutions;
   a real code-editor component (syntax highlighting, etc.) is a fair v2+ upgrade if desired.
-- This repo is local-only; it has not been pushed to GitHub.
+- Pushed to GitHub: [github.com/rled7/dsa-study-buddy](https://github.com/rled7/dsa-study-buddy)
+  (public repo).
