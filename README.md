@@ -10,12 +10,39 @@ the last:
 | Version | Adds | Status |
 |---|---|---|
 | **v1** | Curriculum browser, practice problems, in-browser JS test runner, localStorage progress tracking, crash-visibility logging, and a **stubbed** "Ask the Buddy" panel | ✅ this repo |
-| **v2** | Wires the buddy panel to a **local LLM via Ollama** (offline, no API keys) so it can actually answer questions about the problem you're looking at | not started |
+| **v2** | Wires the buddy panel to a **local LLM via Ollama** (offline, no API keys) so it can actually answer questions about the problem you're looking at | ✅ this repo |
 | **v3** | Adds a **growing local RAG brain**: a small distilled knowledge base (textbook → distilled notes → embeddings → local vector DB) the buddy can search before answering, so it gets better over time without needing a bigger model | not started |
 
-The v1 UI already has a dedicated "Ask the Buddy" panel, form, and response area wired up —
-it just displays a stub message today. v2 replaces the stub handler in `wireBuddyPanelEvents()`
-(`src/main.ts`) with a real call to a local Ollama endpoint; no UI rework needed.
+## v2 — Ask the Buddy (local LLM via Ollama)
+
+The panel calls Ollama's `/api/chat` endpoint (`http://localhost:11434`) directly from the
+browser with `model: "qwen2.5-coder:7b"` and `stream: false`. No server component, no API
+key — everything runs on your machine.
+
+**Setup** (one-time):
+```bash
+brew install ollama
+brew services start ollama       # runs as a background daemon, survives reboots
+ollama pull qwen2.5-coder:7b     # ~4.7GB, Q4 quantization
+```
+
+**What it sends:** a short system prompt (concise, hint-first rather than solution-dump) plus
+whatever problem you're currently viewing — pattern, sub-pattern, title, description, and your
+current in-editor code — so answers are grounded in what's actually on screen. If you're on the
+pattern list instead of a problem page, it just answers generally.
+
+**Error handling:** if Ollama isn't running or the model isn't pulled, the panel shows a plain
+error message telling you exactly what to run, rather than hanging or failing silently — same
+crash-visibility standard as the rest of this app.
+
+**Why `qwen2.5-coder:7b`:** fits comfortably in this machine's available disk budget (~4.7GB out
+of ~18GB free at the time this was built) while still being a real coding-tuned model. If you
+have more headroom, a 14B variant is a drop-in `ollama pull`/model-name swap in `src/main.ts`
+(`OLLAMA_MODEL` constant) — no other code changes needed.
+
+The v1 UI already had a dedicated "Ask the Buddy" panel, form, and response area wired up as a
+stub; v2 replaced the stub handler in `wireBuddyPanelEvents()` (`src/main.ts`) with the real
+Ollama call above — no UI rework was needed, as planned.
 
 ## What's in v1
 
@@ -35,7 +62,7 @@ it just displays a stub message today. v2 replaces the stub handler in `wireBudd
   `console.warn` calls into a `sessionStorage` ring buffer (key `dsa_study_buddy_log`, capped
   at 100 entries). A footer button lets you trigger a deliberate test error, and another
   exports the buffer as JSON. This app should never crash silently.
-- **Ask the Buddy panel (stub)** — always visible, always the same shape it'll have in v2/v3.
+- **Ask the Buddy panel** — always visible; as of v2, answers for real via a local LLM (see below).
 
 ### Honest content coverage
 
@@ -113,9 +140,24 @@ project history for the driver). Confirmed:
 5. Clicking "Throw test error (debug)" → the crash logger captures it in
    `sessionStorage['dsa_study_buddy_log']`.
 
+## Verification (v2)
+
+Same headless-Chrome/CDP approach, against a running Ollama instance with `qwen2.5-coder:7b`
+pulled. Confirmed:
+
+1. On the Two Sum problem page, asking "What data structure makes this O(n) instead of
+   O(n^2)?" shows "Thinking…" (input + button disabled) then a real, relevant, model-generated
+   answer ("A hash map (or dictionary) will make it O(n)."), with the button/input re-enabled
+   after. Zero console errors during the round trip.
+2. With Ollama stopped (`brew services stop ollama`), asking a question surfaces the friendly
+   error text (which Ollama command to run) with the `buddy-response--error` style applied,
+   and the form re-enables afterward instead of getting stuck — verified before restarting the
+   service.
+
 ## Notes
 
-- No AI, no network calls, no external dependencies beyond Vite/TypeScript tooling in v1.
+- No network calls beyond `localhost` (Ollama), no external dependencies beyond Vite/TypeScript
+  tooling and Ollama itself.
 - Editor is a plain `<textarea>` for v1 — good enough to write and test short solutions;
   a real code-editor component (syntax highlighting, etc.) is a fair v2+ upgrade if desired.
 - This repo is local-only; it has not been pushed to GitHub.

@@ -44,6 +44,62 @@ let currentRunResult: RunResult | null = null;
 let currentCode: string | null = null;
 let currentProblemId: string | null = null;
 
+// ─── Buddy panel (v2: local LLM via Ollama) ────────────────────────────────
+
+const OLLAMA_CHAT_URL = "http://localhost:11434/api/chat";
+const OLLAMA_MODEL = "qwen2.5-coder:7b";
+
+// Kept short deliberately: this ships on every request to a 7B model running
+// on CPU/GPU locally, so a bloated prompt is pure added latency here, same
+// principle as capping a hosted system prompt to control cost.
+const BUDDY_SYSTEM_PROMPT =
+  "You are an offline coding study buddy inside a DSA practice app. Be concise: a " +
+  "few sentences or a short snippet, not an essay. Prefer a nudge/hint over the full " +
+  "solution unless the user clearly asks for the answer. Use the given problem " +
+  "context; if none is given, answer generally.";
+
+function buddyContextForRoute(route: Route): string {
+  if (route.view !== "problem") {
+    return "The user is browsing the pattern list and isn't looking at a specific problem right now.";
+  }
+  const found = findProblem(route.problemId);
+  if (!found) return "The user is viewing an unknown/removed problem.";
+  const { pattern, subpattern, problem } = found;
+  const code = currentProblemId === problem.id && currentCode !== null ? currentCode : problem.starterCode;
+  return [
+    `Pattern: ${pattern.name} > ${subpattern.name}`,
+    `Problem: ${problem.title} (${problem.difficulty})`,
+    `Description: ${problem.description}`,
+    `User's current code:\n${code}`,
+  ].join("\n\n");
+}
+
+async function askBuddy(question: string, route: Route): Promise<string> {
+  const res = await fetch(OLLAMA_CHAT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: OLLAMA_MODEL,
+      stream: false,
+      messages: [
+        { role: "system", content: BUDDY_SYSTEM_PROMPT },
+        { role: "user", content: `${buddyContextForRoute(route)}\n\nQuestion: ${question}` },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Ollama responded ${res.status} ${res.statusText}`);
+  }
+
+  const data = await res.json();
+  const content = data?.message?.content;
+  if (typeof content !== "string" || !content.trim()) {
+    throw new Error("Ollama returned an empty response");
+  }
+  return content.trim();
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function escapeHtml(s: string): string {
@@ -82,7 +138,7 @@ function renderApp(): void {
   `;
   wireContentEvents(route);
   wireFooterEvents();
-  wireBuddyPanelEvents();
+  wireBuddyPanelEvents(route);
 }
 
 function renderSidebar(route: Route): string {
@@ -322,7 +378,7 @@ function renderBuddyPanel(): string {
   return `
     <h2>Ask the Buddy</h2>
     <p class="buddy-stub-note">
-      Local AI arrives in v2 (Ollama) &mdash; this is where your offline coding buddy will answer.
+      Answered locally by ${escapeHtml(OLLAMA_MODEL)} via Ollama &mdash; offline, no API key.
     </p>
     <form id="buddy-form">
       <input type="text" id="buddy-input" placeholder="Ask about this problem..." autocomplete="off" />
@@ -374,17 +430,40 @@ function wireFooterEvents(): void {
   });
 }
 
-function wireBuddyPanelEvents(): void {
+function wireBuddyPanelEvents(route: Route): void {
   const form = document.querySelector<HTMLFormElement>("#buddy-form")!;
   const input = document.querySelector<HTMLInputElement>("#buddy-input")!;
   const response = document.querySelector<HTMLDivElement>("#buddy-response")!;
+  const askBtn = form.querySelector<HTMLButtonElement>("button[type=submit]")!;
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const question = input.value.trim();
-    response.textContent = question
-      ? `Local AI arrives in v2 (Ollama) — this is where your offline coding buddy will answer. (You asked: "${question}")`
-      : "Local AI arrives in v2 (Ollama) — this is where your offline coding buddy will answer.";
+    if (!question) return;
+
+    askBtn.disabled = true;
+    input.disabled = true;
+    response.classList.remove("buddy-response--error");
+    response.textContent = "Thinking…";
+
+    askBuddy(question, route)
+      .then((answer) => {
+        response.textContent = answer;
+      })
+      .catch((err) => {
+        // Mirrors the crash-visibility standard the rest of this app follows:
+        // a failed local-model call is a real error, not a silent no-op.
+        console.error("Buddy panel request failed:", err);
+        response.classList.add("buddy-response--error");
+        response.textContent =
+          "Couldn't reach the local model. Make sure Ollama is running " +
+          `("brew services start ollama") and "${OLLAMA_MODEL}" is pulled ` +
+          `("ollama pull ${OLLAMA_MODEL}").`;
+      })
+      .finally(() => {
+        askBtn.disabled = false;
+        input.disabled = false;
+      });
   });
 }
 
