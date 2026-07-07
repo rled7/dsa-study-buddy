@@ -12,6 +12,7 @@ the last:
 | **v1** | Curriculum browser, practice problems, in-browser JS test runner, localStorage progress tracking, crash-visibility logging, and a **stubbed** "Ask the Buddy" panel | ✅ this repo |
 | **v2** | Wires the buddy panel to a **local LLM via Ollama** (offline, no API keys) so it can actually answer questions about the problem you're looking at | ✅ this repo |
 | **v3** | Adds a **growing local RAG brain**: paste in notes/excerpts → chunked → embedded locally → stored in-browser, so the buddy can retrieve relevant material before answering, and gets better over time without needing a bigger model | ✅ this repo |
+| **v4** | Installable on Android + iOS home screens as a **PWA** (manifest + offline service worker) — first rung of a broader mobile port; see `docs/mobile-approaches.md` for the full Capacitor/React Native/Flutter plan | ✅ this repo |
 
 ## v2 — Ask the Buddy (local LLM via Ollama)
 
@@ -77,6 +78,97 @@ possibly know, then ask about it with the toggle off (expect an ignorant/generic
 (expect the specific ingested detail, verbatim-adjacent). See "Verification (v3)" below — this is
 the check that actually discriminates a working RAG loop from a decorative one.
 
+## v4 — Installable on Android + iOS (PWA)
+
+This is the first of several planned mobile paths (see `docs/mobile-approaches.md` for the
+full comparison, including Capacitor, React Native, and Flutter, and the on-device-LLM
+research needed for the buddy/brain to work without a Mac on the network). A PWA needed no
+native toolchain — it's an addition to the existing Vite app, not a separate build.
+
+**What was added:**
+- `public/manifest.json` — name, icons (192/512/maskable-512), `display: "standalone"`,
+  matching the app's actual dark theme (`#0f1115`) as the background/theme color.
+- `public/sw.js` — a hand-written service worker (no Workbox/build-step dependency, matching
+  this app's minimal-tooling style elsewhere). Precaches the app shell (`index.html`,
+  manifest, icons, favicon) on install, and uses **stale-while-revalidate** for same-origin
+  GET requests so the hashed JS/CSS bundle gets cached the first time it's fetched without the
+  service worker needing to know its filename ahead of time.
+- Registration gated to `import.meta.env.PROD` in `src/main.ts` — never active during
+  `npm run dev`, so it can't fight Vite's HMR with stale cached responses.
+- iOS-specific `<meta apple-mobile-web-app-*>` tags and an `apple-touch-icon` link in
+  `index.html` — iOS ignores the standard manifest for home-screen install styling.
+- `public/icons/` — generated from the existing `favicon.svg` logo mark, composited onto a
+  square `#0f1115` canvas (68% fill for the two `any`-purpose icons, 40% fill for the
+  maskable one, since maskable icons need real safe-zone padding or OS icon masks crop into
+  the artwork).
+
+**Deliberately NOT intercepted by the service worker:** anything cross-origin or non-GET —
+this matters because v2/v3's Ollama calls (`http://localhost:11434`, all POST) must always
+hit the network live, never get cached or served stale. The fetch handler checks
+`req.method !== "GET" || url.origin !== self.location.origin` and passes those straight
+through untouched.
+
+## v5 — System Design Building Blocks (multi-approach problems)
+
+A 17th pattern, **System Design Building Blocks**, turns 7 terms from the System Design
+glossary (`#/concepts`) into real, gradeable coding problems: LRU Cache, Rate Limiter,
+Idempotency Key Store, Prefix Autocomplete, Cluster Connectivity (Union-Find), Bloom Filter
+Membership, and Top-K Frequent Items.
+
+Two things make these different from the earlier seeded problems:
+
+- **Operations-sequence framing.** The runner (`src/runner.ts`) only supports pure functions —
+  no stateful classes. Rather than change the runner, every "system design" problem is
+  reframed as a pure function that takes an explicit sequence of operations (e.g.
+  `lruCacheOperations(capacity, ops, argsList)`) and returns one result per operation. Zero
+  runner changes needed.
+- **Multiple ordered solutions.** `Problem.solutions?: SolutionApproach[]` (see
+  `src/data/types.ts`) lets a problem list every conceptually distinct way to solve it —
+  approach name, time/space complexity, a plain-English explanation, and standalone code —
+  ordered fastest-to-slowest by time complexity. `src/main.ts`'s "Show solution" reveal
+  renders this list when present, falling back to the legacy single-`<pre>` view otherwise.
+  The pre-existing `solution` field is still required and kept in sync (set to the fastest
+  approach) since older tooling reads it directly.
+
+All 7 problems' `solution` field and every `solutions[].code` entry are verified to
+independently pass that problem's own `testCases` — see "Verification (v5)" below. Test data
+for these problems is deliberately engineered so genuinely different algorithms agree exactly
+(no ties at Top-K's cutoff, a large gap between bursts for the Rate Limiter so Fixed-Window and
+Sliding-Window-Log can't diverge at a boundary, hash positions for the Bloom Filter checked in
+real Node.js so the "non-member" query can't collide with either inserted item's bits).
+
+## v6 — Language & Framework Reference
+
+A new sidebar section, **Language & Framework Reference** (`#/reference`), separate from the
+17 DSA patterns and the System Design glossary: a curated, leveled (Beginner → Intermediate →
+Advanced) reference of core methods and concepts per language/framework.
+
+This is deliberately **curated, not exhaustive**. "List every method for every language" isn't
+something to hand-author accurately from memory — signatures get misremembered, coverage is
+never really complete, and it doesn't fit the runnable `Problem` model anyway. Instead:
+
+- **`src/data/reference.ts`** defines a small `LanguageRef → RefCategory → RefItem` model (same
+  spirit as `architecture.ts`'s glossary). Each `RefItem` has a name, a level, a plain-English
+  summary, and an optional short example.
+- **All 12 languages/frameworks are seeded** — 475 entries total across JavaScript (108),
+  Python (75), Ruby & Rails (58), Java (50), C (46), SQL (34), React (21), Angular (18),
+  Flutter (18), GraphQL (16), NoSQL (16), and PostgreSQL (15). Each spans `push()`/`append()`
+  basics up through language-specific advanced material (JS `Proxy`/microtask ordering, Python
+  MRO/`__slots__`, Java type erasure/Integer caching, C struct padding/pointer arithmetic, Ruby
+  metaprogramming, SQL window functions/recursive CTEs, React reconciliation/Suspense, Angular
+  change detection, Flutter's `InheritedWidget`, Postgres `pgvector`/GIN indexes, GraphQL
+  DataLoader/N+1).
+- **Still curated, not exhaustive**, and still scaffolds cleanly: `LanguageRef.categories: []`
+  renders the same "coming soon" idiom used elsewhere for unstubbed sub-patterns, so adding a
+  13th language later is a non-breaking append.
+- **The long tail is the buddy panel, on purpose.** Every reference page points at the
+  always-visible "Ask the Buddy" panel for anything not in the curated list — the local LLM can
+  answer arbitrary method questions on demand instead of this file trying to enumerate every
+  method of every language up front (which would be both unbounded and prone to hallucinated
+  signatures if hand-authored from memory).
+
+Verified via two headless-Chrome walkthroughs (31 checks total) — see "Verification (v6)" below.
+
 ## What's in v1
 
 - **Curriculum browser** — the full 16-pattern structure (Arrays, String, Hashing, Stack,
@@ -100,12 +192,15 @@ the check that actually discriminates a working RAG loop from a decorative one.
 ### Honest content coverage
 
 Real, working practice problems (description + test cases + reference solution) are seeded
-for **4 of the 16 patterns** (~2 problems each, 8 total):
+for **5 of the 17 patterns** (15 problems total):
 
 - **Arrays**: Subarray Sum Equals K (Prefix Sum), Maximum Sum Subarray of Size K (Sliding Window)
 - **String**: Valid Anagram (Anagram/Frequency Count), Valid Palindrome (Palindrome)
 - **Hashing**: Two Sum, Group Anagrams
 - **Stack**: Valid Parentheses (Balanced Parentheses), Next Greater Element (Next Greater/Smaller)
+- **System Design Building Blocks** (v5): LRU Cache, Rate Limiter, Idempotency Key Store,
+  Prefix Autocomplete, Cluster Connectivity, Bloom Filter Membership, Top-K Frequent Items —
+  each with 2-3 solutions ordered fastest-to-slowest.
 
 The other **12 patterns** show their full sub-pattern structure and a plain-English
 explanation per sub-pattern, but their problem lists are empty with a "problems coming soon"
@@ -135,6 +230,19 @@ Everything content-related lives in **`src/data/curriculum.ts`** (types are in
      // group order). See sortNums / canonicalGroups near the top of the
      // file for examples.
      normalize: (v) => v,
+     // Optional: list every conceptually distinct way to solve this problem,
+     // ordered fastest-to-slowest by time complexity. When present, the UI
+     // shows this list instead of the single `solution` above (which must
+     // still be set — use the fastest approach's code). Every approach's
+     // `code` must independently pass the SAME `testCases`, so if two
+     // algorithms can legally disagree at an edge case (ties, boundaries,
+     // false positives), engineer testCases to avoid that edge — see
+     // sysdes-rate-limiter / sysdes-bloom-filter / sysdes-top-k-frequent
+     // for real examples of this, and verify/sysdes_verify.mjs for how to
+     // bulk-check every approach against the real runner before committing.
+     solutions: [
+       { approach: "...", timeComplexity: "O(...)", spaceComplexity: "O(...)", explanation: "...", code: "..." },
+     ],
    };
    ```
 2. Push it into the right sub-pattern's `problems` array (find the `Pattern`/`SubPattern` in
@@ -144,6 +252,26 @@ Everything content-related lives in **`src/data/curriculum.ts`** (types are in
 
 The runner (`src/runner.ts`), UI (`src/main.ts`), and progress tracking (`src/progress.ts`)
 need no changes — they all read from `PATTERNS` generically.
+
+## How to add a reference entry
+
+Everything for the Language & Framework Reference lives in **`src/data/reference.ts`**. To add
+an entry to an existing language, or a whole new category, push a `RefItem` into a `RefCategory`:
+
+```ts
+{ name: "methodName()", level: "beginner" /* | "intermediate" | "advanced" */,
+  summary: "One or two plain-English sentences: what it does and why it matters.",
+  example: "optional short usage snippet" },
+```
+
+To add a brand-new language/framework, push a `LanguageRef` with `categories: []` into
+`LANGUAGE_REFS` — it renders a "coming soon" page pointing at the buddy panel until you fill it
+in, same idiom as an empty `problems` array on a stub sub-pattern. No `main.ts`/`style.css`
+changes are needed either way — the reference UI reads `LANGUAGE_REFS` generically.
+
+Keep entries curated and confidently accurate rather than exhaustive — this is a hand-authored
+reference, not a scrape of official docs, so only add things you (or whoever's contributing)
+actually know are correct. Anything not covered is what the buddy panel is for.
 
 ## Local dev
 
@@ -214,6 +342,61 @@ favor of the concurrently-present current-problem context. Reordering the prompt
 before the current-problem section) and adding explicit priority language ("these take priority
 over the problem below") fixed it. Left as a comment in `askBuddy` (`src/main.ts`) since it's a
 non-obvious, model-behavior-driven constraint, not just a style choice.
+
+## Verification (v4)
+
+Built `dist/`, served it with `vite preview`, drove it with headless Chrome over CDP —
+same approach as v1-v3, but this time the discriminating test is **actual offline reload**,
+not just "the files exist":
+
+1. Manifest link resolves and parses: `name`, 3 icon entries, `display: "standalone"`,
+   `start_url: "./"` all present as expected.
+2. `navigator.serviceWorker.getRegistration()` reaches `active.state === "activated"`
+   within ~1s of load, scoped to the app root.
+3. `caches.open('dsa-study-buddy-v1')` contains the full app shell **plus** the actual
+   hashed bundle filenames (`assets/index-*.js`, `assets/index-*.css`) — proving
+   stale-while-revalidate opportunistically cached them on first load, not just the
+   hand-picked precache list.
+4. **The real test:** used CDP's `Network.emulateNetworkConditions` to force the browser
+   fully offline (not just "slow"), then navigated again. The app still rendered its real
+   title and a populated `#app` root (~9.5KB of DOM), served entirely from the service
+   worker cache with zero network available — this is what "installable and offline"
+   actually has to mean, not just a manifest existing.
+
+## Verification (v5)
+
+Two layers, both against the real code (not hand-simulation):
+
+1. **Bulk correctness** — `verify/sysdes_verify.mjs` imports the actual `PATTERNS` from
+   `src/data/curriculum.ts` and the actual `runTests` from `src/runner.ts` (Node 22's
+   `--experimental-strip-types` loads the `.ts` files directly, no build step) and runs every
+   `solutions[].code` entry, plus every legacy `solution` field, through the real runner
+   against that problem's own `testCases`. Run: `node --experimental-strip-types
+   verify/sysdes_verify.mjs`. Result: **7 problems, 15 solution approaches, all pass.**
+2. **Headless-Chrome/CDP walkthrough** — same driver pattern as `verify/dsa_verify.mjs`:
+   confirmed "System Design Building Blocks" appears in the pattern list, its 6 sub-patterns
+   and 7 problem links render, opening Top-K Frequent Items and clicking "Show solution"
+   renders all 3 approaches in fastest-to-slowest order with correct complexity labels, and
+   pasting the fastest approach's own code into the editor and clicking "Run tests" passes
+   both test cases live in the browser — with zero entries in the crash logger throughout.
+5. Checked `sessionStorage['dsa_study_buddy_log']` (the app's own crash logger) after the
+   whole flow: `null` — zero errors, same crash-visibility standard as v1-v3.
+
+## Verification (v6)
+
+Two headless-Chrome/CDP walkthroughs, 31 checks total, all pass:
+
+1. **Initial wiring pass (17 checks)**, run when only JavaScript was seeded: sidebar shows the
+   new "Language & Framework Reference" entry; `#/reference` lists all 12 language/framework
+   cards including JavaScript and Ruby; a then-stub language (Python) rendered its title plus a
+   coming-soon message pointing at the buddy panel instead of a dead page; `#/reference/javascript`
+   rendered all 10 categories, 108 items, all 3 level badges, the first item's name, and at
+   least one example snippet; the buddy panel still rendered alongside the reference page; the
+   breadcrumb linked back to the picker; crash log stayed empty.
+2. **Full-content pass (14 checks)**, run after all 12 languages were authored: navigated into
+   every single language/framework page and confirmed each renders a real title, a non-zero
+   `.ref-item` count, and no `.coming-soon` stub marker; confirmed zero `.pattern-card--stub`
+   cards remain on the picker (all 12 seeded, none still a placeholder); crash log stayed empty.
 
 ## Notes
 

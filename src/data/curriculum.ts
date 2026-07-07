@@ -429,6 +429,617 @@ const stack: Pattern = {
   ],
 };
 
+// ─── System Design Building Blocks ────────────────────────────────────────
+// Codeable versions of terms from the System Design glossary (#/concepts).
+// Each problem is graded against ONE fnName/testCases pair like any other
+// problem, but `solutions` additionally lists every conceptually distinct
+// way to solve it, ordered fastest-to-slowest by time complexity — all
+// verified to independently pass the same testCases (see verify/sysdes_verify.mjs).
+
+const lruCache: Problem = {
+  id: "sysdes-lru-cache",
+  title: "LRU Cache (Caching)",
+  difficulty: "Medium",
+  description:
+    "Codes the 'Caching' glossary term. Given a capacity and a sequence of put(key, value)/get(key) operations, " +
+    "return one result per operation: null for put, the value (or -1 if absent) for get. When a put would exceed " +
+    "capacity, evict the Least Recently Used key first. Both get and put count as 'using' a key.\n\n" +
+    "ops[i] is either \"put\" or \"get\"; argsList[i] holds that operation's arguments.",
+  fnName: "lruCacheOperations",
+  starterCode: "function lruCacheOperations(capacity, ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        2,
+        ["put", "put", "get", "put", "get", "put", "get", "get", "get"],
+        [[1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]],
+      ],
+      expected: [null, null, 1, null, -1, null, -1, 3, 4],
+    },
+    {
+      input: [1, ["put", "get", "put", "get", "get"], [[2, 1], [2], [3, 2], [2], [3]]],
+      expected: [null, 1, null, -1, 2],
+    },
+  ],
+  solution:
+    "function lruCacheOperations(capacity, ops, argsList) {\n" +
+    "  const map = new Map();\n" +
+    "  const head = { key: null, value: null, prev: null, next: null };\n" +
+    "  const tail = { key: null, value: null, prev: null, next: null };\n" +
+    "  head.next = tail; tail.prev = head;\n" +
+    "  function remove(node) { node.prev.next = node.next; node.next.prev = node.prev; }\n" +
+    "  function addFront(node) { node.next = head.next; node.prev = head; head.next.prev = node; head.next = node; }\n" +
+    "  const results = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], args = argsList[i];\n" +
+    "    if (op === 'put') {\n" +
+    "      const [key, value] = args;\n" +
+    "      if (map.has(key)) {\n" +
+    "        const node = map.get(key);\n" +
+    "        node.value = value; remove(node); addFront(node);\n" +
+    "      } else {\n" +
+    "        if (map.size >= capacity) { const lru = tail.prev; remove(lru); map.delete(lru.key); }\n" +
+    "        const node = { key, value, prev: null, next: null };\n" +
+    "        addFront(node); map.set(key, node);\n" +
+    "      }\n" +
+    "      results.push(null);\n" +
+    "    } else {\n" +
+    "      const [key] = args;\n" +
+    "      if (!map.has(key)) { results.push(-1); }\n" +
+    "      else { const node = map.get(key); remove(node); addFront(node); results.push(node.value); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return results;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "HashMap + Doubly Linked List",
+      timeComplexity: "O(1) per operation",
+      spaceComplexity: "O(capacity)",
+      explanation:
+        "The HashMap gives O(1) lookup by key; the doubly linked list gives O(1) move-to-front and O(1) " +
+        "eviction from the tail, since removing/inserting a known node needs no traversal. This is the standard " +
+        "real-world implementation (e.g. what a Redis-style in-process cache does).",
+      code:
+        "function lruCacheOperations(capacity, ops, argsList) {\n" +
+        "  const map = new Map();\n" +
+        "  const head = { key: null, value: null, prev: null, next: null };\n" +
+        "  const tail = { key: null, value: null, prev: null, next: null };\n" +
+        "  head.next = tail; tail.prev = head;\n" +
+        "  function remove(node) { node.prev.next = node.next; node.next.prev = node.prev; }\n" +
+        "  function addFront(node) { node.next = head.next; node.prev = head; head.next.prev = node; head.next = node; }\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], args = argsList[i];\n" +
+        "    if (op === 'put') {\n" +
+        "      const [key, value] = args;\n" +
+        "      if (map.has(key)) {\n" +
+        "        const node = map.get(key);\n" +
+        "        node.value = value; remove(node); addFront(node);\n" +
+        "      } else {\n" +
+        "        if (map.size >= capacity) { const lru = tail.prev; remove(lru); map.delete(lru.key); }\n" +
+        "        const node = { key, value, prev: null, next: null };\n" +
+        "        addFront(node); map.set(key, node);\n" +
+        "      }\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      const [key] = args;\n" +
+        "      if (!map.has(key)) { results.push(-1); }\n" +
+        "      else { const node = map.get(key); remove(node); addFront(node); results.push(node.value); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force array (linear scan + splice)",
+      timeComplexity: "O(n) per operation",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Keep a plain array ordered most-recently-used first. Every get/put has to scan for the key (O(n)) and " +
+        "splice it to the front (O(n)). Correct, but each operation degrades linearly as the cache fills.",
+      code:
+        "function lruCacheOperations(capacity, ops, argsList) {\n" +
+        "  let arr = [];\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], args = argsList[i];\n" +
+        "    if (op === 'put') {\n" +
+        "      const [key, value] = args;\n" +
+        "      const idx = arr.findIndex(([k]) => k === key);\n" +
+        "      if (idx !== -1) arr.splice(idx, 1);\n" +
+        "      arr.unshift([key, value]);\n" +
+        "      if (arr.length > capacity) arr.pop();\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      const [key] = args;\n" +
+        "      const idx = arr.findIndex(([k]) => k === key);\n" +
+        "      if (idx === -1) { results.push(-1); }\n" +
+        "      else { const [, value] = arr[idx]; arr.splice(idx, 1); arr.unshift([key, value]); results.push(value); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+  ],
+};
+
+const rateLimiter: Problem = {
+  id: "sysdes-rate-limiter",
+  title: "Rate Limiter (Rate Limiting)",
+  difficulty: "Medium",
+  description:
+    "Codes the 'Rate Limiting' glossary term. Given maxRequests, windowMs, and an array of request timestamps " +
+    "(ms, ascending), return one boolean per timestamp: true if that request is allowed under a sliding " +
+    "'maxRequests per windowMs' policy, false if it should be rejected.",
+  fnName: "rateLimiterOperations",
+  starterCode: "function rateLimiterOperations(maxRequests, windowMs, timestamps) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [3, 1000, [0, 10, 20, 30, 2000, 2010, 2020, 2030]],
+      expected: [true, true, true, false, true, true, true, false],
+    },
+    { input: [1, 100, [5, 50, 200]], expected: [true, false, true] },
+  ],
+  solution:
+    "function rateLimiterOperations(maxRequests, windowMs, timestamps) {\n" +
+    "  let windowStart = null, count = 0;\n" +
+    "  const results = [];\n" +
+    "  for (const t of timestamps) {\n" +
+    "    const windowIndex = Math.floor(t / windowMs);\n" +
+    "    if (windowStart === null || windowIndex !== windowStart) { windowStart = windowIndex; count = 0; }\n" +
+    "    if (count < maxRequests) { count++; results.push(true); } else { results.push(false); }\n" +
+    "  }\n" +
+    "  return results;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Fixed Window Counter",
+      timeComplexity: "O(1) per request",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Just a counter that resets when the timestamp crosses into a new windowMs-sized bucket. Cheapest option, " +
+        "but the classic flaw: a burst straddling a window boundary can let through up to ~2x maxRequests in a " +
+        "short span, since each half-window is counted independently.",
+      code:
+        "function rateLimiterOperations(maxRequests, windowMs, timestamps) {\n" +
+        "  let windowStart = null, count = 0;\n" +
+        "  const results = [];\n" +
+        "  for (const t of timestamps) {\n" +
+        "    const windowIndex = Math.floor(t / windowMs);\n" +
+        "    if (windowStart === null || windowIndex !== windowStart) { windowStart = windowIndex; count = 0; }\n" +
+        "    if (count < maxRequests) { count++; results.push(true); } else { results.push(false); }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+    {
+      approach: "Sliding Window Log",
+      timeComplexity: "O(k) per request, k = requests currently in window",
+      spaceComplexity: "O(k)",
+      explanation:
+        "Store the timestamp of every allowed request; on each new request, prune entries older than windowMs " +
+        "then check the remaining count. Exact — no boundary-burst flaw — at the cost of storing and scanning a " +
+        "log per client instead of one counter.",
+      code:
+        "function rateLimiterOperations(maxRequests, windowMs, timestamps) {\n" +
+        "  const log = [];\n" +
+        "  const results = [];\n" +
+        "  for (const t of timestamps) {\n" +
+        "    while (log.length && log[0] <= t - windowMs) log.shift();\n" +
+        "    if (log.length < maxRequests) { log.push(t); results.push(true); } else { results.push(false); }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+  ],
+};
+
+const idempotencyStore: Problem = {
+  id: "sysdes-idempotency-store",
+  title: "Idempotency Key Store (Idempotency)",
+  difficulty: "Easy",
+  description:
+    "Codes the 'Idempotency' glossary term. Given a sequence of request IDs, return one boolean per request: " +
+    "true if this is the first time that ID has been seen (safe to actually process it), false if it's a " +
+    "duplicate (already processed, skip it) — the mechanism that prevents a retried network call from double-charging.",
+  fnName: "idempotencyOperations",
+  starterCode: "function idempotencyOperations(requestIds) {\n  // your code here\n}",
+  testCases: [
+    { input: [["a", "b", "a", "c", "b", "b", "d"]], expected: [true, true, false, true, false, false, true] },
+  ],
+  solution:
+    "function idempotencyOperations(requestIds) {\n" +
+    "  const seen = new Set();\n" +
+    "  return requestIds.map((id) => { if (seen.has(id)) return false; seen.add(id); return true; });\n" +
+    "}",
+  solutions: [
+    {
+      approach: "HashSet",
+      timeComplexity: "O(1) per operation",
+      spaceComplexity: "O(n)",
+      explanation: "A Set gives O(1) membership checks — the standard way an API gateway dedupes retried requests.",
+      code:
+        "function idempotencyOperations(requestIds) {\n" +
+        "  const seen = new Set();\n" +
+        "  return requestIds.map((id) => { if (seen.has(id)) return false; seen.add(id); return true; });\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force array scan",
+      timeComplexity: "O(n) per operation",
+      spaceComplexity: "O(n)",
+      explanation: "Same idea, but `.includes` rescans everything seen so far — correct, just needlessly slower.",
+      code:
+        "function idempotencyOperations(requestIds) {\n" +
+        "  const seen = [];\n" +
+        "  return requestIds.map((id) => { if (seen.includes(id)) return false; seen.push(id); return true; });\n" +
+        "}",
+    },
+  ],
+};
+
+const trieAutocomplete: Problem = {
+  id: "sysdes-autocomplete",
+  title: "Prefix Autocomplete (Search-as-you-type)",
+  difficulty: "Medium",
+  description:
+    "A common frontend companion to 'Query Optimization' / search indexing: given a dictionary of words and a " +
+    "list of query prefixes, return the (alphabetically sorted) words matching each prefix.",
+  fnName: "autocompleteOperations",
+  starterCode: "function autocompleteOperations(dictionary, prefixes) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [["cat", "car", "cart", "dog", "do", "door", "cats"], ["ca", "do", "z", "cart"]],
+      expected: [["car", "cart", "cat", "cats"], ["do", "dog", "door"], [], ["cart"]],
+    },
+  ],
+  normalize: (v) => (Array.isArray(v) ? v.map((g) => (Array.isArray(g) ? [...g].sort() : g)) : v),
+  solution:
+    "function autocompleteOperations(dictionary, prefixes) {\n" +
+    "  return prefixes.map((prefix) => dictionary.filter((w) => w.startsWith(prefix)).sort());\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Trie",
+      timeComplexity: "O(m + results) per query, m = prefix length",
+      spaceComplexity: "O(total characters in dictionary)",
+      explanation:
+        "Build a trie once from the dictionary. Each query walks m characters to the prefix's node, then collects " +
+        "whatever words hang below it — cost scales with the prefix and the match count, not the dictionary size.",
+      code:
+        "function autocompleteOperations(dictionary, prefixes) {\n" +
+        "  const root = {};\n" +
+        "  for (const word of dictionary) {\n" +
+        "    let node = root;\n" +
+        "    for (const ch of word) { node[ch] = node[ch] || {}; node = node[ch]; }\n" +
+        "    node.$end = word;\n" +
+        "  }\n" +
+        "  function collect(node, out) {\n" +
+        "    if (node.$end) out.push(node.$end);\n" +
+        "    for (const ch in node) { if (ch !== '$end') collect(node[ch], out); }\n" +
+        "  }\n" +
+        "  return prefixes.map((prefix) => {\n" +
+        "    let node = root;\n" +
+        "    for (const ch of prefix) { if (!node[ch]) return []; node = node[ch]; }\n" +
+        "    const out = [];\n" +
+        "    collect(node, out);\n" +
+        "    return out.sort();\n" +
+        "  });\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force scan",
+      timeComplexity: "O(queries * dictionarySize * wordLength)",
+      spaceComplexity: "O(1) extra",
+      explanation: "Re-filter the whole dictionary for every query. No setup cost, but doesn't scale with traffic.",
+      code:
+        "function autocompleteOperations(dictionary, prefixes) {\n" +
+        "  return prefixes.map((prefix) => dictionary.filter((w) => w.startsWith(prefix)).sort());\n" +
+        "}",
+    },
+  ],
+};
+
+const clusterConnectivity: Problem = {
+  id: "sysdes-cluster-connectivity",
+  title: "Cluster Connectivity (Leader Election / Service Discovery)",
+  difficulty: "Medium",
+  description:
+    "Codes the union/find machinery under 'Leader Election' and 'Service Discovery' — nodes that merge into the " +
+    "same group when they discover each other. Given numNodes and a sequence of union(a,b)/connected(a,b) " +
+    "operations, return one result per operation: null for union, boolean for connected.",
+  fnName: "clusterConnectivityOperations",
+  starterCode: "function clusterConnectivityOperations(numNodes, ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        6,
+        ["union", "union", "connected", "connected", "union", "connected"],
+        [[0, 1], [1, 2], [0, 2], [0, 3], [3, 4], [0, 4]],
+      ],
+      expected: [null, null, true, false, null, false],
+    },
+  ],
+  solution:
+    "function clusterConnectivityOperations(numNodes, ops, argsList) {\n" +
+    "  const parent = Array.from({ length: numNodes }, (_, i) => i);\n" +
+    "  const rank = new Array(numNodes).fill(0);\n" +
+    "  function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }\n" +
+    "  function union(a, b) {\n" +
+    "    const ra = find(a), rb = find(b);\n" +
+    "    if (ra === rb) return;\n" +
+    "    if (rank[ra] < rank[rb]) parent[ra] = rb;\n" +
+    "    else if (rank[ra] > rank[rb]) parent[rb] = ra;\n" +
+    "    else { parent[rb] = ra; rank[ra]++; }\n" +
+    "  }\n" +
+    "  const results = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const [a, b] = argsList[i];\n" +
+    "    if (ops[i] === 'union') { union(a, b); results.push(null); }\n" +
+    "    else { results.push(find(a) === find(b)); }\n" +
+    "  }\n" +
+    "  return results;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Union-Find (path compression + union by rank)",
+      timeComplexity: "O(α(n)) per operation — effectively constant",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Path compression flattens the tree every time find() is called, and union-by-rank keeps it from growing " +
+        "tall in the first place. Together they make near-constant-time cluster membership checks at any scale.",
+      code:
+        "function clusterConnectivityOperations(numNodes, ops, argsList) {\n" +
+        "  const parent = Array.from({ length: numNodes }, (_, i) => i);\n" +
+        "  const rank = new Array(numNodes).fill(0);\n" +
+        "  function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }\n" +
+        "  function union(a, b) {\n" +
+        "    const ra = find(a), rb = find(b);\n" +
+        "    if (ra === rb) return;\n" +
+        "    if (rank[ra] < rank[rb]) parent[ra] = rb;\n" +
+        "    else if (rank[ra] > rank[rb]) parent[rb] = ra;\n" +
+        "    else { parent[rb] = ra; rank[ra]++; }\n" +
+        "  }\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const [a, b] = argsList[i];\n" +
+        "    if (ops[i] === 'union') { union(a, b); results.push(null); }\n" +
+        "    else { results.push(find(a) === find(b)); }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+    {
+      approach: "Naive adjacency list + BFS",
+      timeComplexity: "O(V + E) per connected() query",
+      spaceComplexity: "O(V + E)",
+      explanation:
+        "union() just records an edge (cheap), but connected() has to walk the graph from scratch every time to " +
+        "prove two nodes are reachable. Fine for a handful of checks, falls over as the cluster and query volume grow.",
+      code:
+        "function clusterConnectivityOperations(numNodes, ops, argsList) {\n" +
+        "  const adj = Array.from({ length: numNodes }, () => []);\n" +
+        "  function connected(a, b) {\n" +
+        "    if (a === b) return true;\n" +
+        "    const seen = new Set([a]);\n" +
+        "    const queue = [a];\n" +
+        "    while (queue.length) {\n" +
+        "      const cur = queue.shift();\n" +
+        "      for (const next of adj[cur]) {\n" +
+        "        if (next === b) return true;\n" +
+        "        if (!seen.has(next)) { seen.add(next); queue.push(next); }\n" +
+        "      }\n" +
+        "    }\n" +
+        "    return false;\n" +
+        "  }\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const [a, b] = argsList[i];\n" +
+        "    if (ops[i] === 'union') { adj[a].push(b); adj[b].push(a); results.push(null); }\n" +
+        "    else { results.push(connected(a, b)); }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+  ],
+};
+
+const bloomFilter: Problem = {
+  id: "sysdes-bloom-filter",
+  title: "Bloom Filter Membership (Data Operations)",
+  difficulty: "Medium",
+  description:
+    "A probabilistic sibling of 'Database Indexing' for existence checks: given items to insert and items to " +
+    "query, return whether each queried item 'might exist' (true) or 'definitely does not exist' (false). " +
+    "False positives are an accepted tradeoff for a probabilistic structure; false negatives are never allowed.",
+  fnName: "bloomFilterOperations",
+  starterCode: "function bloomFilterOperations(insertItems, queryItems) {\n  // your code here\n}",
+  testCases: [{ input: [["apple", "banana"], ["apple", "cherry"]], expected: [true, false] }],
+  solution:
+    "function bloomFilterOperations(insertItems, queryItems) {\n" +
+    "  const set = new Set(insertItems);\n" +
+    "  return queryItems.map((q) => set.has(q));\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Exact HashSet",
+      timeComplexity: "O(1) per operation",
+      spaceComplexity: "O(n) — one full entry per inserted item",
+      explanation:
+        "Perfectly accurate and just as fast as a bloom filter for a single lookup, but it has to store every " +
+        "item in full. Fine until n gets large enough that memory is the actual constraint.",
+      code:
+        "function bloomFilterOperations(insertItems, queryItems) {\n" +
+        "  const set = new Set(insertItems);\n" +
+        "  return queryItems.map((q) => set.has(q));\n" +
+        "}",
+    },
+    {
+      approach: "Bloom Filter (2 hash functions, fixed-size bit array)",
+      timeComplexity: "O(k) per operation, k = number of hash functions",
+      spaceComplexity: "O(bits) — fixed, independent of item size or count",
+      explanation:
+        "Hash each item k ways into a shared bit array and set those bits. A query only returns true if ALL k of " +
+        "its bits are set. Uses a fraction of the memory of a real set at the cost of possible false positives " +
+        "(never false negatives) — exactly the tradeoff CDNs and databases make to avoid checking disk/network " +
+        "for a key that almost certainly doesn't exist.",
+      code:
+        "function bloomFilterOperations(insertItems, queryItems) {\n" +
+        "  const size = 64;\n" +
+        "  const bits = new Array(size).fill(false);\n" +
+        "  function hash1(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h % size; }\n" +
+        "  function hash2(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 37 + str.charCodeAt(i) * 7) >>> 0; return h % size; }\n" +
+        "  for (const item of insertItems) { bits[hash1(item)] = true; bits[hash2(item)] = true; }\n" +
+        "  return queryItems.map((q) => bits[hash1(q)] && bits[hash2(q)]);\n" +
+        "}",
+    },
+  ],
+};
+
+const topKFrequent: Problem = {
+  id: "sysdes-top-k-frequent",
+  title: "Top-K Frequent Items (Observability / Performance Metrics)",
+  difficulty: "Medium",
+  description:
+    "The 'what are my most-hit endpoints' query behind any metrics dashboard: given a stream of items and a " +
+    "count k, return the k most frequent items.",
+  fnName: "topKFrequentItems",
+  starterCode: "function topKFrequentItems(items, k) {\n  // your code here\n}",
+  testCases: [
+    { input: [["a", "a", "a", "a", "b", "b", "b", "c", "c", "d"], 2], expected: ["a", "b"] },
+    { input: [["a", "a", "a", "a", "b", "b", "b", "c", "c", "d"], 3], expected: ["a", "b", "c"] },
+  ],
+  normalize: (v) => (Array.isArray(v) ? [...v].sort() : v),
+  solution:
+    "function topKFrequentItems(items, k) {\n" +
+    "  const freq = new Map();\n" +
+    "  for (const it of items) freq.set(it, (freq.get(it) || 0) + 1);\n" +
+    "  const buckets = Array.from({ length: items.length + 1 }, () => []);\n" +
+    "  for (const [item, count] of freq) buckets[count].push(item);\n" +
+    "  const result = [];\n" +
+    "  for (let count = buckets.length - 1; count >= 0 && result.length < k; count--) {\n" +
+    "    for (const item of buckets[count]) { if (result.length < k) result.push(item); }\n" +
+    "  }\n" +
+    "  return result;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Bucket Sort by frequency",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Frequency can never exceed n, so bucket items by their count (index = count) and read buckets off from " +
+        "the top. Linear — no comparison sort needed at all.",
+      code:
+        "function topKFrequentItems(items, k) {\n" +
+        "  const freq = new Map();\n" +
+        "  for (const it of items) freq.set(it, (freq.get(it) || 0) + 1);\n" +
+        "  const buckets = Array.from({ length: items.length + 1 }, () => []);\n" +
+        "  for (const [item, count] of freq) buckets[count].push(item);\n" +
+        "  const result = [];\n" +
+        "  for (let count = buckets.length - 1; count >= 0 && result.length < k; count--) {\n" +
+        "    for (const item of buckets[count]) { if (result.length < k) result.push(item); }\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      approach: "Min-Heap of size k",
+      timeComplexity: "O(n log k)",
+      spaceComplexity: "O(n + k)",
+      explanation:
+        "Push every (item, count) pair through a size-capped min-heap, popping the smallest whenever it exceeds " +
+        "k. Never sorts the full frequency table — useful when k is small relative to the number of distinct items.",
+      code:
+        "function topKFrequentItems(items, k) {\n" +
+        "  const freq = new Map();\n" +
+        "  for (const it of items) freq.set(it, (freq.get(it) || 0) + 1);\n" +
+        "  const entries = [...freq.entries()];\n" +
+        "  const heap = [];\n" +
+        "  function push(entry) {\n" +
+        "    heap.push(entry);\n" +
+        "    let i = heap.length - 1;\n" +
+        "    while (i > 0) { const p = (i - 1) >> 1; if (heap[p][1] <= heap[i][1]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }\n" +
+        "  }\n" +
+        "  function pop() {\n" +
+        "    const top = heap[0], last = heap.pop();\n" +
+        "    if (heap.length) { heap[0] = last; let i = 0;\n" +
+        "      while (true) { let s = i, l = 2*i+1, r = 2*i+2;\n" +
+        "        if (l < heap.length && heap[l][1] < heap[s][1]) s = l;\n" +
+        "        if (r < heap.length && heap[r][1] < heap[s][1]) s = r;\n" +
+        "        if (s === i) break; [heap[s], heap[i]] = [heap[i], heap[s]]; i = s; }\n" +
+        "    }\n" +
+        "    return top;\n" +
+        "  }\n" +
+        "  for (const entry of entries) { push(entry); if (heap.length > k) pop(); }\n" +
+        "  return heap.map(([item]) => item);\n" +
+        "}",
+    },
+    {
+      approach: "Full sort by frequency",
+      timeComplexity: "O(n log n)",
+      spaceComplexity: "O(n)",
+      explanation: "Sort every distinct item by count descending, take the first k. Simplest to write, but does more work than the answer needs.",
+      code:
+        "function topKFrequentItems(items, k) {\n" +
+        "  const freq = new Map();\n" +
+        "  for (const it of items) freq.set(it, (freq.get(it) || 0) + 1);\n" +
+        "  return [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, k).map(([item]) => item);\n" +
+        "}",
+    },
+  ],
+};
+
+const systemDesign: Pattern = {
+  id: "system-design",
+  name: "System Design Building Blocks",
+  subpatterns: [
+    {
+      id: "sysdes-caching",
+      name: "Caching & Eviction",
+      explanation:
+        "Bounded-size stores that must decide what to evict when full. See the 'Caching' term in the " +
+        "System Design glossary (#/concepts).",
+      problems: [lruCache],
+    },
+    {
+      id: "sysdes-traffic-control",
+      name: "Traffic Control",
+      explanation:
+        "Deciding whether a request should even be allowed to proceed. See 'Rate Limiting' and 'Idempotency' " +
+        "in the glossary.",
+      problems: [rateLimiter, idempotencyStore],
+    },
+    {
+      id: "sysdes-search",
+      name: "Search & Indexing",
+      explanation: "Structures purpose-built for fast prefix/substring lookups over large text.",
+      problems: [trieAutocomplete],
+    },
+    {
+      id: "sysdes-distributed-coordination",
+      name: "Distributed Coordination",
+      explanation:
+        "How independent nodes agree on group membership. See 'Leader Election' and 'Service Discovery' in " +
+        "the glossary.",
+      problems: [clusterConnectivity],
+    },
+    {
+      id: "sysdes-probabilistic",
+      name: "Probabilistic Structures",
+      explanation: "Trading a small, bounded error rate for a large reduction in memory or time.",
+      problems: [bloomFilter],
+    },
+    {
+      id: "sysdes-observability",
+      name: "Observability & Metrics",
+      explanation: "Turning raw event streams into the aggregates a dashboard actually shows.",
+      problems: [topKFrequent],
+    },
+  ],
+};
+
 // ─── Remaining 12 patterns — structure only, seeded content coming soon ───
 
 function stub(id: string, name: string, subpatternNames: string[]): Pattern {
@@ -496,7 +1107,7 @@ const rangeStructures = stub("range-structures", "Range Structures", [
   "Fenwick Tree/BIT",
 ]);
 
-// ─── Full 16-pattern curriculum ───────────────────────────────────────────
+// ─── Full 17-pattern curriculum ───────────────────────────────────────────
 
 export const PATTERNS: Pattern[] = [
   arrays,
@@ -515,6 +1126,7 @@ export const PATTERNS: Pattern[] = [
   bitManipulation,
   advanced,
   rangeStructures,
+  systemDesign,
 ];
 
 export function findProblem(problemId: string): { pattern: Pattern; subpattern: SubPatternRef; problem: Problem } | undefined {

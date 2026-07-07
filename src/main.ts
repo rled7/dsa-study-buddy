@@ -5,8 +5,19 @@ import { Logger } from "./logger";
 // nothing can throw before it's wired up.
 Logger.install();
 
+// PWA offline shell. PROD-only: registering during `npm run dev` would let
+// the service worker's cached responses fight with Vite's HMR.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch((err) => {
+      console.error("Service worker registration failed", err);
+    });
+  });
+}
+
 import { PATTERNS, findProblem } from "./data/curriculum";
 import { ARCHITECTURE_CATEGORIES, ARCHITECTURE_CONCEPT_COUNT } from "./data/architecture";
+import { LANGUAGE_REFS, REFERENCE_ITEM_COUNT, referenceItemCount, type RefLevel } from "./data/reference";
 import type { Pattern } from "./data/types";
 import { runTests, formatValue, type RunResult } from "./runner";
 import { isSolved, markSolved, countSolved } from "./progress";
@@ -17,6 +28,8 @@ import { ingestText, getAllChunks, clearBrain, retrieveRelevant, type BrainChunk
 type Route =
   | { view: "list" }
   | { view: "concepts" }
+  | { view: "reference" }
+  | { view: "referenceLang"; langId: string }
   | { view: "brain" }
   | { view: "pattern"; patternId: string }
   | { view: "subpattern"; patternId: string; subId: string }
@@ -27,6 +40,12 @@ function parseRoute(): Route {
   const parts = hash.split("/").filter(Boolean);
   if (parts[0] === "concepts") {
     return { view: "concepts" };
+  }
+  if (parts[0] === "reference" && parts[1]) {
+    return { view: "referenceLang", langId: parts[1] };
+  }
+  if (parts[0] === "reference") {
+    return { view: "reference" };
   }
   if (parts[0] === "brain") {
     return { view: "brain" };
@@ -197,6 +216,7 @@ function renderSidebar(route: Route): string {
   }).join("");
 
   const conceptsActive = route.view === "concepts" ? " active" : "";
+  const referenceActive = route.view === "reference" || route.view === "referenceLang" ? " active" : "";
   const brainActive = route.view === "brain" ? " active" : "";
 
   return `
@@ -211,6 +231,11 @@ function renderSidebar(route: Route): string {
       <span class="sidebar-name">System Design Concepts</span>
       <span class="sidebar-progress sidebar-progress--stub">${ARCHITECTURE_CONCEPT_COUNT}</span>
     </a>
+    <a class="sidebar-item${referenceActive}" href="#/reference">
+      <span class="sidebar-index">&#128218;</span>
+      <span class="sidebar-name">Language &amp; Framework Reference</span>
+      <span class="sidebar-progress sidebar-progress--stub">${REFERENCE_ITEM_COUNT}</span>
+    </a>
     <a class="sidebar-item${brainActive}" href="#/brain">
       <span class="sidebar-index">&#129504;</span>
       <span class="sidebar-name">Feed the Brain</span>
@@ -222,6 +247,8 @@ function renderSidebar(route: Route): string {
 function renderContent(route: Route): string {
   if (route.view === "list") return renderPatternList();
   if (route.view === "concepts") return renderConceptsPage();
+  if (route.view === "reference") return renderReferenceList();
+  if (route.view === "referenceLang") return renderReferenceDetail(route.langId);
   if (route.view === "brain") return renderBrainPage();
   if (route.view === "pattern") return renderPatternDetail(route.patternId);
   if (route.view === "subpattern") return renderSubpatternDetail(route.patternId, route.subId);
@@ -303,6 +330,88 @@ function renderConceptsPage(): string {
       Architecture-level concepts to know before building any scalable application. Coding interviews test the
       16 patterns; system-design interviews test these. A quick-reference glossary &mdash; ${ARCHITECTURE_CONCEPT_COUNT}
       terms across ${ARCHITECTURE_CATEGORIES.length} areas. You don't need them all today &mdash; keep learning, keep building.
+    </p>
+    <div class="concept-groups">${groups}</div>
+  `;
+}
+
+const LEVEL_LABEL: Record<RefLevel, string> = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  advanced: "Advanced",
+};
+
+function renderReferenceList(): string {
+  return `
+    <h1>Language &amp; Framework Reference</h1>
+    <p class="lead">
+      Curated core methods and concepts, leveled beginner &rarr; advanced, per language and framework.
+      This is a hand-picked reference, not an exhaustive dump &mdash; for anything not listed here, ask
+      the buddy panel on the right; the local model can answer arbitrary method questions on demand.
+    </p>
+    <div class="pattern-grid">
+      ${LANGUAGE_REFS.map((lang) => {
+        const count = referenceItemCount(lang.id);
+        return `
+          <a class="pattern-card${count === 0 ? " pattern-card--stub" : ""}" href="#/reference/${lang.id}">
+            <h3>${escapeHtml(lang.name)}</h3>
+            <p>${escapeHtml(lang.tagline)}</p>
+            <span class="badge">${count > 0 ? `${count} entries` : "coming soon"}</span>
+          </a>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
+function renderReferenceDetail(langId: string): string {
+  const lang = LANGUAGE_REFS.find((l) => l.id === langId);
+  if (!lang) return renderNotFound("Language reference not found.");
+
+  if (lang.categories.length === 0) {
+    return `
+      <p class="breadcrumb"><a href="#/reference">Language &amp; Framework Reference</a></p>
+      <h1>${escapeHtml(lang.name)}</h1>
+      <p class="lead">${escapeHtml(lang.tagline)}</p>
+      <p class="coming-soon">
+        Curated reference for ${escapeHtml(lang.name)} is coming soon. In the meantime, ask the buddy
+        panel on the right &mdash; it can answer method/syntax questions for ${escapeHtml(lang.name)} directly.
+      </p>
+    `;
+  }
+
+  const groups = lang.categories
+    .map((cat) => {
+      const rows = cat.items
+        .map(
+          (item) => `
+            <div class="ref-item">
+              <div class="ref-item-head">
+                <span class="ref-item-name">${escapeHtml(item.name)}</span>
+                <span class="ref-level-badge ref-level-badge--${item.level}">${LEVEL_LABEL[item.level]}</span>
+              </div>
+              <p class="ref-item-summary">${escapeHtml(item.summary)}</p>
+              ${item.example ? `<code class="ref-item-example">${escapeHtml(item.example)}</code>` : ""}
+            </div>
+          `
+        )
+        .join("");
+      return `
+        <section class="concept-group">
+          <h3 class="concept-group-title">${escapeHtml(cat.name)}</h3>
+          <div class="ref-item-list">${rows}</div>
+        </section>
+      `;
+    })
+    .join("");
+
+  return `
+    <p class="breadcrumb"><a href="#/reference">Language &amp; Framework Reference</a></p>
+    <h1>${escapeHtml(lang.name)}</h1>
+    <p class="lead">
+      ${escapeHtml(lang.tagline)} &mdash; ${referenceItemCount(lang.id)} curated entries across
+      ${lang.categories.length} categories, ordered beginner &rarr; advanced within each. Anything not
+      listed here? Ask the buddy panel.
     </p>
     <div class="concept-groups">${groups}</div>
   `;
@@ -426,8 +535,25 @@ function renderProblemDetail(problemId: string): string {
     </div>
 
     <div id="solution-reveal" class="solution-reveal" hidden>
-      <h3>Reference solution</h3>
-      <pre id="solution-code"></pre>
+      ${
+        problem.solutions && problem.solutions.length > 0
+          ? `<h3>Reference solutions (fastest &rarr; slowest)</h3>
+             <div class="solutions-list">
+               ${problem.solutions
+                 .map(
+                   (sol, i) => `
+                 <div class="solution-approach">
+                   <h4>${i + 1}. ${escapeHtml(sol.approach)}</h4>
+                   <p class="solution-complexity"><strong>Time:</strong> ${escapeHtml(sol.timeComplexity)} &middot; <strong>Space:</strong> ${escapeHtml(sol.spaceComplexity)}</p>
+                   <p class="solution-explanation">${escapeHtml(sol.explanation)}</p>
+                   <pre class="solution-code-block">${escapeHtml(sol.code)}</pre>
+                 </div>`,
+                 )
+                 .join("")}
+             </div>`
+          : `<h3>Reference solution</h3>
+             <pre id="solution-code"></pre>`
+      }
     </div>
 
     <div id="test-results">${currentRunResult ? renderTestResults(currentRunResult) : ""}</div>
@@ -504,7 +630,7 @@ function wireContentEvents(route: Route): void {
   const runBtn = document.querySelector<HTMLButtonElement>("#run-tests-btn")!;
   const showSolutionBtn = document.querySelector<HTMLButtonElement>("#show-solution-btn")!;
   const solutionReveal = document.querySelector<HTMLDivElement>("#solution-reveal")!;
-  const solutionCode = document.querySelector<HTMLPreElement>("#solution-code")!;
+  const solutionCode = document.querySelector<HTMLPreElement>("#solution-code");
 
   runBtn.addEventListener("click", () => {
     currentCode = editor.value;
@@ -514,7 +640,7 @@ function wireContentEvents(route: Route): void {
   });
 
   showSolutionBtn.addEventListener("click", () => {
-    solutionCode.textContent = problem.solution;
+    if (solutionCode) solutionCode.textContent = problem.solution;
     solutionReveal.hidden = !solutionReveal.hidden;
   });
 }
