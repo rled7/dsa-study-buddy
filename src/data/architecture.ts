@@ -12,6 +12,12 @@ export interface Concept {
   term: string;
   /** One-line plain-English definition. */
   definition: string;
+  /**
+   * Optional id into DEEP_DIVES (./deepdives.ts) for terms dense enough to
+   * warrant multiple named strategies with code + diagrams. When set, the
+   * term links to #/concepts/:deepDiveId instead of rendering as plain text.
+   */
+  deepDiveId?: string;
 }
 
 export interface ConceptCategory {
@@ -26,7 +32,7 @@ export const ARCHITECTURE_CATEGORIES: ConceptCategory[] = [
     name: "Traffic & Networking",
     concepts: [
       { term: "Rate Limiting", definition: "Limit requests from clients" },
-      { term: "Caching", definition: "Store data for faster access" },
+      { term: "Caching", definition: "Store data for faster access", deepDiveId: "caching" },
       { term: "Load Balancing", definition: "Distribute traffic evenly" },
       { term: "Reverse Proxies", definition: "Route & protect backend" },
       { term: "API Gateways", definition: "Single entry for APIs" },
@@ -97,8 +103,8 @@ export const ARCHITECTURE_CATEGORIES: ConceptCategory[] = [
       { term: "Horizontal Scaling", definition: "Add more servers" },
       { term: "Vertical Scaling", definition: "Increase server power" },
       { term: "CDN", definition: "Deliver content globally" },
-      { term: "Edge Caching", definition: "Cache near user" },
-      { term: "Cache Invalidation", definition: "Keep cache fresh" },
+      { term: "Edge Caching", definition: "Cache near user", deepDiveId: "caching" },
+      { term: "Cache Invalidation", definition: "Keep cache fresh", deepDiveId: "caching" },
     ],
   },
   {

@@ -169,6 +169,28 @@ never really complete, and it doesn't fit the runnable `Problem` model anyway. I
 
 Verified via two headless-Chrome walkthroughs (31 checks total) — see "Verification (v6)" below.
 
+## v7 — Caching Strategies deep dive
+
+The System Design glossary's "Caching" entry (and its two close relatives, "Edge Caching" and
+"Cache Invalidation") were one-line definitions like every other glossary term — too thin for a
+topic that's really a family of named strategies. `#/concepts` now links all three to a shared
+deep-dive page, `#/concepts/caching`, instead of a plain-text row.
+
+- **`src/data/deepdives.ts`** defines a small `DeepDive → DeepDiveStrategy` model (name,
+  description, an ASCII diagram of the request/data flow, and a runnable-shaped code snippet).
+  A `Concept` opts in via an optional `deepDiveId` field (`src/data/architecture.ts`); when set,
+  `renderConceptsPage` renders that term as a link to `#/concepts/:deepDiveId` instead of plain
+  text. The route (`{ view: "deepDive"; id }`) and `renderDeepDivePage` follow the same pattern
+  as the language-reference detail page.
+- **11 strategies authored**, covering all three angles caching strategies actually vary on —
+  *when* the app talks to cache vs. source of truth (Cache-Aside, Read-Through, Write-Through,
+  Write-Behind, Write-Around), *when* an entry goes stale (TTL, LRU eviction — cross-referenced
+  to this app's own LRU Cache problem in the System Design track, Cache Invalidation-on-write),
+  and *where* the cache physically lives (CDN/Edge Caching, Distributed Caching via Redis,
+  Browser/HTTP Caching).
+- Same curated-not-exhaustive posture as the rest of the reference content: each strategy is
+  something confidently correct to hand-author, not a scrape of a caching textbook.
+
 ## What's in v1
 
 - **Curriculum browser** — the full 16-pattern structure (Arrays, String, Hashing, Stack,
@@ -397,6 +419,23 @@ Two headless-Chrome/CDP walkthroughs, 31 checks total, all pass:
    every single language/framework page and confirmed each renders a real title, a non-zero
    `.ref-item` count, and no `.coming-soon` stub marker; confirmed zero `.pattern-card--stub`
    cards remain on the picker (all 12 seeded, none still a placeholder); crash log stayed empty.
+
+## Verification (v7)
+
+Headless-Chrome/CDP walkthrough, 13 checks, all pass:
+
+1. `#/concepts` renders the "Caching" term as a link (not plain text), and exactly 3 terms
+   (Caching, Edge Caching, Cache Invalidation) link to the same deep dive.
+2. `#/concepts/caching` renders the title, a breadcrumb back to `#/concepts`, and all 11
+   strategies — confirmed by counting `.deepdive-strategy` nodes, not assuming the array length.
+3. All 11 diagrams and all 11 code panels render with real (>10 char) content, not empty
+   placeholders.
+4. Spot-checked specific content, not just counts: the first strategy is Cache-Aside, and the
+   LRU eviction strategy's description actually cross-references this app's own LRU Cache
+   problem (confirms the cross-link text landed, not just that *a* description exists).
+5. An unknown deep-dive id (`#/concepts/does-not-exist`) shows a not-found message instead of
+   throwing — same "never crash silently" guarantee as the rest of the app.
+6. Crash log stayed empty across the whole walkthrough.
 
 ## Notes
 

@@ -17,6 +17,7 @@ if (import.meta.env.PROD && "serviceWorker" in navigator) {
 
 import { PATTERNS, findProblem } from "./data/curriculum";
 import { ARCHITECTURE_CATEGORIES, ARCHITECTURE_CONCEPT_COUNT } from "./data/architecture";
+import { findDeepDive } from "./data/deepdives";
 import { LANGUAGE_REFS, REFERENCE_ITEM_COUNT, referenceItemCount, type RefLevel } from "./data/reference";
 import type { Pattern } from "./data/types";
 import { runTests, formatValue, type RunResult } from "./runner";
@@ -28,6 +29,7 @@ import { ingestText, getAllChunks, clearBrain, retrieveRelevant, type BrainChunk
 type Route =
   | { view: "list" }
   | { view: "concepts" }
+  | { view: "deepDive"; id: string }
   | { view: "reference" }
   | { view: "referenceLang"; langId: string }
   | { view: "brain" }
@@ -38,6 +40,9 @@ type Route =
 function parseRoute(): Route {
   const hash = location.hash.replace(/^#\/?/, "");
   const parts = hash.split("/").filter(Boolean);
+  if (parts[0] === "concepts" && parts[1]) {
+    return { view: "deepDive", id: parts[1] };
+  }
   if (parts[0] === "concepts") {
     return { view: "concepts" };
   }
@@ -247,6 +252,7 @@ function renderSidebar(route: Route): string {
 function renderContent(route: Route): string {
   if (route.view === "list") return renderPatternList();
   if (route.view === "concepts") return renderConceptsPage();
+  if (route.view === "deepDive") return renderDeepDivePage(route.id);
   if (route.view === "reference") return renderReferenceList();
   if (route.view === "referenceLang") return renderReferenceDetail(route.langId);
   if (route.view === "brain") return renderBrainPage();
@@ -307,14 +313,17 @@ function renderBrainPage(): string {
 function renderConceptsPage(): string {
   const groups = ARCHITECTURE_CATEGORIES.map((cat) => {
     const rows = cat.concepts
-      .map(
-        (c) => `
+      .map((c) => {
+        const term = c.deepDiveId
+          ? `<a class="concept-term concept-term--linked" href="#/concepts/${c.deepDiveId}">${escapeHtml(c.term)} &rarr;</a>`
+          : `<span class="concept-term">${escapeHtml(c.term)}</span>`;
+        return `
           <div class="concept-item">
-            <span class="concept-term">${escapeHtml(c.term)}</span>
+            ${term}
             <span class="concept-def">${escapeHtml(c.definition)}</span>
           </div>
-        `
-      )
+        `;
+      })
       .join("");
     return `
       <section class="concept-group">
@@ -330,8 +339,42 @@ function renderConceptsPage(): string {
       Architecture-level concepts to know before building any scalable application. Coding interviews test the
       16 patterns; system-design interviews test these. A quick-reference glossary &mdash; ${ARCHITECTURE_CONCEPT_COUNT}
       terms across ${ARCHITECTURE_CATEGORIES.length} areas. You don't need them all today &mdash; keep learning, keep building.
+      Terms with a &rarr; link to a deeper breakdown with named strategies, code, and diagrams.
     </p>
     <div class="concept-groups">${groups}</div>
+  `;
+}
+
+function renderDeepDivePage(id: string): string {
+  const dive = findDeepDive(id);
+  if (!dive) return renderNotFound("Deep dive not found.");
+
+  const strategies = dive.strategies
+    .map(
+      (s) => `
+        <section class="deepdive-strategy">
+          <h3 class="deepdive-strategy-name">${escapeHtml(s.name)}</h3>
+          <p class="deepdive-strategy-desc">${escapeHtml(s.description)}</p>
+          <div class="deepdive-panels">
+            <div class="deepdive-panel">
+              <span class="deepdive-panel-label">Flow</span>
+              <pre class="deepdive-diagram">${escapeHtml(s.diagram)}</pre>
+            </div>
+            <div class="deepdive-panel">
+              <span class="deepdive-panel-label">Code</span>
+              <pre class="deepdive-code"><code>${escapeHtml(s.code)}</code></pre>
+            </div>
+          </div>
+        </section>
+      `
+    )
+    .join("");
+
+  return `
+    <p class="breadcrumb"><a href="#/concepts">System Design Concepts</a></p>
+    <h1>${escapeHtml(dive.title)}</h1>
+    <p class="lead">${escapeHtml(dive.intro)}</p>
+    <div class="deepdive-strategy-list">${strategies}</div>
   `;
 }
 

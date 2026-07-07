@@ -650,3 +650,70 @@ button {
   color: #d1f7f0;
   white-space: pre-wrap;
 }
+
+.concept-term--linked {
+  text-decoration: none;
+  cursor: pointer;
+}
+.concept-term--linked:hover {
+  color: var(--accent);
+}
+
+/* ─── System-design deep dives (e.g. Caching Strategies) ───────────────── */
+.deepdive-strategy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.deepdive-strategy {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+.deepdive-strategy-name {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+.deepdive-strategy-desc {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+.deepdive-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+}
+.deepdive-panel {
+  background: var(--bg-elevated-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.7rem;
+  min-width: 0;
+}
+.deepdive-panel-label {
+  display: block;
+  font-size: 0.66rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+.deepdive-diagram,
+.deepdive-code {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  white-space: pre;
+  overflow-x: auto;
+  font-family: var(--font-mono, monospace);
+}
+.deepdive-diagram {
+  color: #d1f7f0;
+}
+.deepdive-code {
+  color: var(--text);
+}
