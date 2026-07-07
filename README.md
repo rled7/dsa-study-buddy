@@ -191,6 +191,29 @@ deep-dive page, `#/concepts/caching`, instead of a plain-text row.
 - Same curated-not-exhaustive posture as the rest of the reference content: each strategy is
   something confidently correct to hand-author, not a scrape of a caching textbook.
 
+## v8 — Solved-code persistence + deep dives across the System Design page
+
+Two changes bundled together:
+
+- **Solved code now survives a reload.** Previously only a solved/unsolved boolean persisted
+  (`src/progress.ts`); the actual passing code lived in an in-memory variable in `main.ts` and
+  was lost the moment you navigated away. `src/solutions.ts` mirrors the same
+  `localStorage`-per-problem pattern (key `dsa_study_buddy_solutions_v1`, `Record<problemId,
+  code>`) and is written whenever a "Run tests" click passes all cases. This is what the
+  in-progress GitHub export feature needs to actually have code to export.
+- **The caching deep-dive treatment (v7) now covers five more System Design terms** that are
+  genuinely "one term, several named strategies" the same way Caching was: **Rate Limiting**
+  (Fixed Window Counter, Sliding Window Log, Sliding Window Counter, Token Bucket, Leaky
+  Bucket), **Load Balancing** (Round Robin, Weighted Round Robin, Least Connections, IP Hash,
+  Consistent Hashing), **Sharding** (Range-Based, Hash-Based, Directory-Based, Geo-Based),
+  **Replication** (Leader-Follower, Multi-Leader, Leaderless/Quorum-Based), and **Consistency
+  Models** (Strong, Eventual, Causal, Read-Your-Writes — linked from both "CAP Theorem" and
+  "Eventual Consistency" in the glossary, since they're the same underlying spectrum). Same data
+  model as caching (`DEEP_DIVES` in `src/data/deepdives.ts`), no new UI code needed — `Concept`
+  entries just opt in via `deepDiveId`. 9 glossary terms across 6 deep dives now link out instead
+  of showing a plain one-line definition; 32 strategies total, each with a description, ASCII
+  diagram, and code snippet.
+
 ## What's in v1
 
 - **Curriculum browser** — the full 16-pattern structure (Arrays, String, Hashing, Stack,
@@ -436,6 +459,28 @@ Headless-Chrome/CDP walkthrough, 13 checks, all pass:
 5. An unknown deep-dive id (`#/concepts/does-not-exist`) shows a not-found message instead of
    throwing — same "never crash silently" guarantee as the rest of the app.
 6. Crash log stayed empty across the whole walkthrough.
+
+## Verification (v8)
+
+Two separate headless-Chrome/CDP passes, run against fresh preview servers + Chrome profiles to
+avoid stale-`localStorage` false negatives:
+
+**Solved-code persistence (10 checks):** loaded the Two Sum problem, revealed and ran the real
+reference solution (not a hand-typed guess), confirmed all tests passed, confirmed the code
+saved under the correct key (`dsa_study_buddy_solutions_v1["hash-two-sum"]`) and matches exactly
+what ran — then, the actual point of the change, did a full `Page.reload()` (fresh JS context,
+not just a route change) and confirmed the saved code was still there. Also confirmed the
+existing solved/unsolved boolean (`progress.ts`) still works unchanged, an unsolved problem has
+no entry, and the crash log stayed empty.
+
+**Five new deep dives (31 checks):** confirmed 9 glossary terms now render as links (not plain
+text) across the 6 deep dives; for each of the 5 new pages (`rate-limiting`, `load-balancing`,
+`sharding`, `replication`, `consistency-models`) confirmed the title, the exact strategy count,
+and that every diagram/code panel has real (>10 char) content — counted via DOM queries, not
+assumed from the source array length. Spot-checked exact strategy name lists for two of the five
+pages against the authored content. Confirmed the original 11-strategy caching deep dive was
+unaffected (no regression) and the breadcrumb still links back to `#/concepts`. Crash log stayed
+empty.
 
 ## Notes
 

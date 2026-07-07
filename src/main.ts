@@ -22,6 +22,7 @@ import { LANGUAGE_REFS, REFERENCE_ITEM_COUNT, referenceItemCount, type RefLevel 
 import type { Pattern } from "./data/types";
 import { runTests, formatValue, type RunResult } from "./runner";
 import { isSolved, markSolved, countSolved } from "./progress";
+import { saveSolutionCode } from "./solutions";
 import { ingestText, getAllChunks, clearBrain, retrieveRelevant, type BrainChunk } from "./brain";
 
 // ─── Routing ───────────────────────────────────────────────────────────────
@@ -678,7 +679,10 @@ function wireContentEvents(route: Route): void {
   runBtn.addEventListener("click", () => {
     currentCode = editor.value;
     currentRunResult = runTests(editor.value, problem);
-    if (currentRunResult.allPassed) markSolved(problem.id);
+    if (currentRunResult.allPassed) {
+      markSolved(problem.id);
+      saveSolutionCode(problem.id, editor.value);
+    }
     renderApp();
   });
 
