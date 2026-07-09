@@ -153,6 +153,135 @@ const maxSumSubarrayOfSizeK: Problem = {
   ],
 };
 
+const maxSubArraySum: Problem = {
+  id: "arr-max-subarray-sum",
+  title: "Maximum Subarray Sum (Kadane's Algorithm)",
+  difficulty: "Medium",
+  description:
+    "Given an integer array nums, find the contiguous subarray (containing at least one number) which has " +
+    "the largest sum, and return that sum.",
+  fnName: "maxSubArraySum",
+  starterCode: "function maxSubArraySum(nums) {\n  // your code here\n}",
+  testCases: [
+    { input: [[-2, 1, -3, 4, -1, 2, 1, -5, 4]], expected: 6 },
+    { input: [[5, 4, -1, 7, 8]], expected: 23 },
+    { input: [[-1]], expected: -1 },
+    { input: [[-2, -1]], expected: -1 },
+    { input: [[1, 2, 3, 4]], expected: 10 },
+  ],
+  solution:
+    "function maxSubArraySum(nums) {\n" +
+    "  let best = nums[0], cur = nums[0];\n" +
+    "  for (let i = 1; i < nums.length; i++) {\n" +
+    "    cur = Math.max(nums[i], cur + nums[i]);\n" +
+    "    best = Math.max(best, cur);\n" +
+    "  }\n" +
+    "  return best;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Kadane's Algorithm",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "At each index, decide whether extending the previous subarray is still worth it or whether starting " +
+        "fresh at the current element beats it — track the running best either way. One pass, constant extra state.",
+      code:
+        "function maxSubArraySum(nums) {\n" +
+        "  let best = nums[0], cur = nums[0];\n" +
+        "  for (let i = 1; i < nums.length; i++) {\n" +
+        "    cur = Math.max(nums[i], cur + nums[i]);\n" +
+        "    best = Math.max(best, cur);\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — all subarrays",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Fix every start index and extend the end index one step at a time, tracking the running sum and the " +
+        "best seen. Correct and simple, but redoes work Kadane's avoids by never reusing a previous partial sum.",
+      code:
+        "function maxSubArraySum(nums) {\n" +
+        "  let best = -Infinity;\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    let sum = 0;\n" +
+        "    for (let j = i; j < nums.length; j++) {\n" +
+        "      sum += nums[j];\n" +
+        "      best = Math.max(best, sum);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return best;\n" +
+        "}",
+    },
+  ],
+};
+
+const classicBinarySearch: Problem = {
+  id: "arr-classic-binary-search",
+  title: "Binary Search",
+  difficulty: "Easy",
+  description:
+    "Given a sorted array of distinct integers nums and a target value, return the index of target in nums, " +
+    "or -1 if it is not present.",
+  fnName: "binarySearch",
+  starterCode: "function binarySearch(nums, target) {\n  // your code here\n}",
+  testCases: [
+    { input: [[-1, 0, 3, 5, 9, 12], 9], expected: 4 },
+    { input: [[-1, 0, 3, 5, 9, 12], 2], expected: -1 },
+    { input: [[5], 5], expected: 0 },
+    { input: [[], 3], expected: -1 },
+    { input: [[1, 3, 5, 7, 9, 11], 1], expected: 0 },
+  ],
+  solution:
+    "function binarySearch(nums, target) {\n" +
+    "  let lo = 0, hi = nums.length - 1;\n" +
+    "  while (lo <= hi) {\n" +
+    "    const mid = (lo + hi) >> 1;\n" +
+    "    if (nums[mid] === target) return mid;\n" +
+    "    if (nums[mid] < target) lo = mid + 1; else hi = mid - 1;\n" +
+    "  }\n" +
+    "  return -1;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Binary Search",
+      timeComplexity: "O(log n)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Repeatedly compare the midpoint to the target and discard the half of the search space that can't " +
+        "contain it. Works because the array is sorted — every comparison halves the remaining candidates.",
+      code:
+        "function binarySearch(nums, target) {\n" +
+        "  let lo = 0, hi = nums.length - 1;\n" +
+        "  while (lo <= hi) {\n" +
+        "    const mid = (lo + hi) >> 1;\n" +
+        "    if (nums[mid] === target) return mid;\n" +
+        "    if (nums[mid] < target) lo = mid + 1; else hi = mid - 1;\n" +
+        "  }\n" +
+        "  return -1;\n" +
+        "}",
+    },
+    {
+      approach: "Linear Scan",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Check every element left to right until the target is found. Correct for any array, sorted or not — " +
+        "but ignores the sortedness that binary search exploits to skip most of the array.",
+      code:
+        "function binarySearch(nums, target) {\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    if (nums[i] === target) return i;\n" +
+        "  }\n" +
+        "  return -1;\n" +
+        "}",
+    },
+  ],
+};
+
 const arrays: Pattern = {
   id: "arrays",
   name: "Arrays",
@@ -179,7 +308,7 @@ const arrays: Pattern = {
       explanation:
         "Track the best subarray sum ending at the current index; either extend the previous subarray or start " +
         "fresh at the current element, whichever is larger.",
-      problems: [],
+      problems: [maxSubArraySum],
     },
     {
       id: "arr-binary-search",
@@ -187,7 +316,7 @@ const arrays: Pattern = {
       explanation:
         "Repeatedly halve a sorted search space by comparing the midpoint to the target, discarding the half " +
         "that can't contain the answer.",
-      problems: [],
+      problems: [classicBinarySearch],
     },
   ],
 };
@@ -325,6 +454,156 @@ const validAnagram: Problem = {
   ],
 };
 
+const isSubsequence: Problem = {
+  id: "str-is-subsequence",
+  title: "Is Subsequence",
+  difficulty: "Easy",
+  description:
+    "Given two strings s and t, return true if s is a subsequence of t (i.e. s can be formed by deleting some " +
+    "characters from t, without changing the order of the remaining characters), or false otherwise.",
+  fnName: "isSubsequence",
+  starterCode: "function isSubsequence(s, t) {\n  // your code here\n}",
+  testCases: [
+    { input: ["abc", "ahbgdc"], expected: true },
+    { input: ["axc", "ahbgdc"], expected: false },
+    { input: ["", "ahbgdc"], expected: true },
+    { input: ["abc", "abc"], expected: true },
+    { input: ["abc", "ab"], expected: false },
+  ],
+  solution:
+    "function isSubsequence(s, t) {\n" +
+    "  let i = 0;\n" +
+    "  for (let j = 0; j < t.length && i < s.length; j++) {\n" +
+    "    if (s[i] === t[j]) i++;\n" +
+    "  }\n" +
+    "  return i === s.length;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Two Pointers",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Walk t with one pointer, only advancing the pointer into s when the current characters match. If the " +
+        "s-pointer reaches the end, every character of s was found in order somewhere in t.",
+      code:
+        "function isSubsequence(s, t) {\n" +
+        "  let i = 0;\n" +
+        "  for (let j = 0; j < t.length && i < s.length; j++) {\n" +
+        "    if (s[i] === t[j]) i++;\n" +
+        "  }\n" +
+        "  return i === s.length;\n" +
+        "}",
+    },
+    {
+      approach: "Recursive match-or-skip",
+      timeComplexity: "O(2^m) worst case (m = t.length) — branches at every matching character",
+      spaceComplexity: "O(m) recursion depth",
+      explanation:
+        "At each position, either consume a matching character or skip ahead in t, trying both when they match. " +
+        "Explores redundant branches the two-pointer scan sidesteps by always taking a match greedily.",
+      code:
+        "function isSubsequence(s, t) {\n" +
+        "  function helper(i, j) {\n" +
+        "    if (i === s.length) return true;\n" +
+        "    if (j === t.length) return false;\n" +
+        "    if (s[i] === t[j] && helper(i + 1, j + 1)) return true;\n" +
+        "    return helper(i, j + 1);\n" +
+        "  }\n" +
+        "  return helper(0, 0);\n" +
+        "}",
+    },
+  ],
+};
+
+const strStrProblem: Problem = {
+  id: "str-needle-in-haystack",
+  title: "Find the Index of the First Occurrence in a String",
+  difficulty: "Medium",
+  description:
+    "Given two strings haystack and needle, return the index of the first occurrence of needle in haystack, " +
+    "or -1 if needle is not part of haystack.",
+  fnName: "strStr",
+  starterCode: "function strStr(haystack, needle) {\n  // your code here\n}",
+  testCases: [
+    { input: ["sadbutsad", "sad"], expected: 0 },
+    { input: ["leetcode", "leeto"], expected: -1 },
+    { input: ["hello", ""], expected: 0 },
+    { input: ["aaaaa", "bba"], expected: -1 },
+    { input: ["mississippi", "issip"], expected: 4 },
+  ],
+  solution:
+    "function strStr(haystack, needle) {\n" +
+    "  const n = haystack.length, m = needle.length;\n" +
+    "  if (m === 0) return 0;\n" +
+    "  const lps = new Array(m).fill(0);\n" +
+    "  let len = 0, i = 1;\n" +
+    "  while (i < m) {\n" +
+    "    if (needle[i] === needle[len]) { len++; lps[i] = len; i++; }\n" +
+    "    else if (len !== 0) { len = lps[len - 1]; }\n" +
+    "    else { lps[i] = 0; i++; }\n" +
+    "  }\n" +
+    "  let hi = 0, ni = 0;\n" +
+    "  while (hi < n) {\n" +
+    "    if (haystack[hi] === needle[ni]) { hi++; ni++; if (ni === m) return hi - ni; }\n" +
+    "    else if (ni !== 0) { ni = lps[ni - 1]; }\n" +
+    "    else { hi++; }\n" +
+    "  }\n" +
+    "  return -1;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "KMP (failure function)",
+      timeComplexity: "O(n + m)",
+      spaceComplexity: "O(m)",
+      explanation:
+        "Precompute, for every prefix of needle, the length of the longest proper prefix that's also a suffix " +
+        "(the 'lps' table). On a mismatch, that table tells the pattern pointer exactly how far to fall back " +
+        "without ever re-reading a haystack character — linear total work regardless of how repetitive the " +
+        "pattern is.",
+      code:
+        "function strStr(haystack, needle) {\n" +
+        "  const n = haystack.length, m = needle.length;\n" +
+        "  if (m === 0) return 0;\n" +
+        "  const lps = new Array(m).fill(0);\n" +
+        "  let len = 0, i = 1;\n" +
+        "  while (i < m) {\n" +
+        "    if (needle[i] === needle[len]) { len++; lps[i] = len; i++; }\n" +
+        "    else if (len !== 0) { len = lps[len - 1]; }\n" +
+        "    else { lps[i] = 0; i++; }\n" +
+        "  }\n" +
+        "  let hi = 0, ni = 0;\n" +
+        "  while (hi < n) {\n" +
+        "    if (haystack[hi] === needle[ni]) { hi++; ni++; if (ni === m) return hi - ni; }\n" +
+        "    else if (ni !== 0) { ni = lps[ni - 1]; }\n" +
+        "    else { hi++; }\n" +
+        "  }\n" +
+        "  return -1;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force sliding compare",
+      timeComplexity: "O(n * m)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Try every start position in haystack and compare character-by-character against needle. Simple, but a " +
+        "mismatch discards no information — the next attempt restarts the pattern from scratch, which is what " +
+        "KMP's failure function exists to avoid.",
+      code:
+        "function strStr(haystack, needle) {\n" +
+        "  const n = haystack.length, m = needle.length;\n" +
+        "  if (m === 0) return 0;\n" +
+        "  for (let i = 0; i + m <= n; i++) {\n" +
+        "    let j = 0;\n" +
+        "    while (j < m && haystack[i + j] === needle[j]) j++;\n" +
+        "    if (j === m) return i;\n" +
+        "  }\n" +
+        "  return -1;\n" +
+        "}",
+    },
+  ],
+};
+
 const stringPattern: Pattern = {
   id: "string",
   name: "String",
@@ -335,7 +614,7 @@ const stringPattern: Pattern = {
       explanation:
         "Walk two indices through a string (often from opposite ends, sometimes both forward) to compare or " +
         "rearrange characters in a single pass instead of nested loops.",
-      problems: [],
+      problems: [isSubsequence],
     },
     {
       id: "str-pattern-matching",
@@ -343,7 +622,7 @@ const stringPattern: Pattern = {
       explanation:
         "Find occurrences of a pattern inside text in O(n+m) by precomputing a failure function that avoids " +
         "re-scanning already-matched characters after a mismatch.",
-      problems: [],
+      problems: [strStrProblem],
     },
     {
       id: "str-anagram-frequency",
@@ -508,6 +787,223 @@ const groupAnagrams: Problem = {
   normalize: canonicalGroups,
 };
 
+const designHashMapProblem: Problem = {
+  id: "hash-design-hashmap",
+  title: "Design HashMap",
+  difficulty: "Easy",
+  description:
+    "Design a HashMap without using any built-in hash table library, exercised via a sequence of operations. " +
+    "ops[i] is one of \"put\", \"get\", \"remove\"; argsList[i] holds that operation's arguments. put/remove " +
+    "return null; get returns the value, or -1 if the key is absent.",
+  fnName: "hashMapOperations",
+  starterCode: "function hashMapOperations(ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        ["put", "put", "get", "get", "put", "get", "remove", "get"],
+        [[1, 1], [2, 2], [1], [3], [2, 1], [2], [2], [2]],
+      ],
+      expected: [null, null, 1, -1, null, 1, null, -1],
+    },
+    {
+      input: [["get", "put", "get"], [["a"], ["a", 5], ["a"]]],
+      expected: [-1, null, 5],
+    },
+  ],
+  solution:
+    "function hashMapOperations(ops, argsList) {\n" +
+    "  const map = new Map();\n" +
+    "  const out = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], a = argsList[i];\n" +
+    "    if (op === 'put') { map.set(a[0], a[1]); out.push(null); }\n" +
+    "    else if (op === 'get') { out.push(map.has(a[0]) ? map.get(a[0]) : -1); }\n" +
+    "    else { map.delete(a[0]); out.push(null); }\n" +
+    "  }\n" +
+    "  return out;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Native Hash Map",
+      timeComplexity: "O(1) average per operation",
+      spaceComplexity: "O(n)",
+      explanation:
+        "A real hash table hashes the key to a bucket, giving average constant-time put/get/remove regardless " +
+        "of how many keys are stored.",
+      code:
+        "function hashMapOperations(ops, argsList) {\n" +
+        "  const map = new Map();\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'put') { map.set(a[0], a[1]); out.push(null); }\n" +
+        "    else if (op === 'get') { out.push(map.has(a[0]) ? map.get(a[0]) : -1); }\n" +
+        "    else { map.delete(a[0]); out.push(null); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+    {
+      approach: "Array of [key, value] pairs",
+      timeComplexity: "O(n) per operation",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Store entries as a flat list and linearly scan for the key on every operation. Illustrates exactly the " +
+        "cost a hash table's bucketing avoids — every put/get/remove rescans everything stored so far.",
+      code:
+        "function hashMapOperations(ops, argsList) {\n" +
+        "  const store = [];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    const idx = store.findIndex((p) => p[0] === a[0]);\n" +
+        "    if (op === 'put') {\n" +
+        "      if (idx >= 0) store[idx][1] = a[1]; else store.push([a[0], a[1]]);\n" +
+        "      out.push(null);\n" +
+        "    } else if (op === 'get') {\n" +
+        "      out.push(idx >= 0 ? store[idx][1] : -1);\n" +
+        "    } else {\n" +
+        "      if (idx >= 0) store.splice(idx, 1);\n" +
+        "      out.push(null);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+  ],
+};
+
+const firstUniqCharProblem: Problem = {
+  id: "hash-first-unique-char",
+  title: "First Unique Character in a String",
+  difficulty: "Easy",
+  description: "Given a string s, return the index of the first non-repeating character, or -1 if none exists.",
+  fnName: "firstUniqChar",
+  starterCode: "function firstUniqChar(s) {\n  // your code here\n}",
+  testCases: [
+    { input: ["leetcode"], expected: 0 },
+    { input: ["loveleetcode"], expected: 2 },
+    { input: ["aabb"], expected: -1 },
+    { input: ["z"], expected: 0 },
+    { input: [""], expected: -1 },
+  ],
+  solution:
+    "function firstUniqChar(s) {\n" +
+    "  const counts = new Map();\n" +
+    "  for (const c of s) counts.set(c, (counts.get(c) || 0) + 1);\n" +
+    "  for (let i = 0; i < s.length; i++) if (counts.get(s[i]) === 1) return i;\n" +
+    "  return -1;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Frequency Map, two passes",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1) — at most 26/alphabet-size distinct keys",
+      explanation:
+        "First pass builds a count of every character; second pass returns the first index whose count is " +
+        "exactly 1. Each pass is linear and independent of how many characters repeat.",
+      code:
+        "function firstUniqChar(s) {\n" +
+        "  const counts = new Map();\n" +
+        "  for (const c of s) counts.set(c, (counts.get(c) || 0) + 1);\n" +
+        "  for (let i = 0; i < s.length; i++) if (counts.get(s[i]) === 1) return i;\n" +
+        "  return -1;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — count via rescanning",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "For each character, rescan the entire string to count its occurrences. Correct, but redoes the same " +
+        "counting work from scratch at every index instead of computing all counts once.",
+      code:
+        "function firstUniqChar(s) {\n" +
+        "  for (let i = 0; i < s.length; i++) {\n" +
+        "    let count = 0;\n" +
+        "    for (let j = 0; j < s.length; j++) if (s[j] === s[i]) count++;\n" +
+        "    if (count === 1) return i;\n" +
+        "  }\n" +
+        "  return -1;\n" +
+        "}",
+    },
+  ],
+};
+
+const countDistinctWindowsProblem: Problem = {
+  id: "hash-count-distinct-in-window",
+  title: "Count Distinct Elements in Every Window of Size K",
+  difficulty: "Medium",
+  description:
+    "Given an array nums and a window size k, return an array where entry i is the number of distinct elements " +
+    "in the window of size k ending at index i (one entry per valid window, in order).",
+  fnName: "countDistinctWindows",
+  starterCode: "function countDistinctWindows(nums, k) {\n  // your code here\n}",
+  testCases: [
+    { input: [[1, 2, 1, 3, 4, 2, 3], 4], expected: [3, 4, 4, 3] },
+    { input: [[1, 1, 1, 1], 2], expected: [1, 1, 1] },
+    { input: [[1, 2, 3, 4], 1], expected: [1, 1, 1, 1] },
+    { input: [[1, 2, 1, 2, 1], 3], expected: [2, 2, 2] },
+  ],
+  solution:
+    "function countDistinctWindows(nums, k) {\n" +
+    "  const freq = new Map();\n" +
+    "  const res = [];\n" +
+    "  for (let i = 0; i < nums.length; i++) {\n" +
+    "    freq.set(nums[i], (freq.get(nums[i]) || 0) + 1);\n" +
+    "    if (i >= k) {\n" +
+    "      const out = nums[i - k];\n" +
+    "      freq.set(out, freq.get(out) - 1);\n" +
+    "      if (freq.get(out) === 0) freq.delete(out);\n" +
+    "    }\n" +
+    "    if (i >= k - 1) res.push(freq.size);\n" +
+    "  }\n" +
+    "  return res;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Sliding window + frequency map",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(k)",
+      explanation:
+        "Maintain a running frequency map as the window slides: add the entering element, remove the leaving " +
+        "element (deleting its key once its count hits zero so map.size always reflects the true distinct " +
+        "count), and read off map.size at each valid window.",
+      code:
+        "function countDistinctWindows(nums, k) {\n" +
+        "  const freq = new Map();\n" +
+        "  const res = [];\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    freq.set(nums[i], (freq.get(nums[i]) || 0) + 1);\n" +
+        "    if (i >= k) {\n" +
+        "      const out = nums[i - k];\n" +
+        "      freq.set(out, freq.get(out) - 1);\n" +
+        "      if (freq.get(out) === 0) freq.delete(out);\n" +
+        "    }\n" +
+        "    if (i >= k - 1) res.push(freq.size);\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — new Set per window",
+      timeComplexity: "O(n * k)",
+      spaceComplexity: "O(k)",
+      explanation:
+        "For every window start, build a fresh Set from that slice and read its size. Correct, but throws away " +
+        "and rebuilds the whole window's distinct-count state on every slide instead of updating incrementally.",
+      code:
+        "function countDistinctWindows(nums, k) {\n" +
+        "  const res = [];\n" +
+        "  for (let i = 0; i + k <= nums.length; i++) {\n" +
+        "    res.push(new Set(nums.slice(i, i + k)).size);\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+  ],
+};
+
 const hashing: Pattern = {
   id: "hashing",
   name: "Hashing",
@@ -518,7 +1014,7 @@ const hashing: Pattern = {
       explanation:
         "A hash map gives O(1) average lookup/insert, turning many O(n^2) brute-force pair/lookup problems into " +
         "O(n) by trading space for time.",
-      problems: [],
+      problems: [designHashMapProblem],
     },
     {
       id: "hash-frequency-map",
@@ -526,7 +1022,7 @@ const hashing: Pattern = {
       explanation:
         "Count occurrences of each element into a map (or array for small fixed alphabets) to answer questions " +
         "about counts, duplicates, or majority elements in one pass.",
-      problems: [],
+      problems: [firstUniqCharProblem],
     },
     {
       id: "hash-count-distinct",
@@ -534,7 +1030,7 @@ const hashing: Pattern = {
       explanation:
         "A hash set tracks which elements have already been seen, letting you count or filter distinct values " +
         "in O(n) instead of sorting first.",
-      problems: [],
+      problems: [countDistinctWindowsProblem],
     },
     {
       id: "hash-group-anagrams",
@@ -705,6 +1201,169 @@ const nextGreaterElements: Problem = {
   ],
 };
 
+const dailyTemperaturesProblem: Problem = {
+  id: "stack-daily-temperatures",
+  title: "Daily Temperatures",
+  difficulty: "Medium",
+  description:
+    "Given an array of daily temperatures, return an array answer where answer[i] is the number of days you " +
+    "have to wait after day i to get a warmer temperature. If there is no future day for which this is " +
+    "possible, keep answer[i] == 0.",
+  fnName: "dailyTemperatures",
+  starterCode: "function dailyTemperatures(temperatures) {\n  // your code here\n}",
+  testCases: [
+    { input: [[73, 74, 75, 71, 69, 72, 76, 73]], expected: [1, 1, 4, 2, 1, 1, 0, 0] },
+    { input: [[30, 40, 50, 60]], expected: [1, 1, 1, 0] },
+    { input: [[30, 60, 90]], expected: [1, 1, 0] },
+    { input: [[90, 60, 30]], expected: [0, 0, 0] },
+  ],
+  solution:
+    "function dailyTemperatures(temperatures) {\n" +
+    "  const res = new Array(temperatures.length).fill(0);\n" +
+    "  const stack = [];\n" +
+    "  for (let i = 0; i < temperatures.length; i++) {\n" +
+    "    while (stack.length && temperatures[stack[stack.length - 1]] < temperatures[i]) {\n" +
+    "      const j = stack.pop();\n" +
+    "      res[j] = i - j;\n" +
+    "    }\n" +
+    "    stack.push(i);\n" +
+    "  }\n" +
+    "  return res;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Monotonic (decreasing) Stack",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Keep indices on the stack whose warmer day hasn't been found yet, temperatures decreasing bottom-to-" +
+        "top. Each index is pushed once and popped at most once — the moment a warmer day appears, it resolves " +
+        "every colder day still waiting on the stack in one shot.",
+      code:
+        "function dailyTemperatures(temperatures) {\n" +
+        "  const res = new Array(temperatures.length).fill(0);\n" +
+        "  const stack = [];\n" +
+        "  for (let i = 0; i < temperatures.length; i++) {\n" +
+        "    while (stack.length && temperatures[stack[stack.length - 1]] < temperatures[i]) {\n" +
+        "      const j = stack.pop();\n" +
+        "      res[j] = i - j;\n" +
+        "    }\n" +
+        "    stack.push(i);\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force (scan right for each day)",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "For each day, scan forward day by day until a warmer one turns up. Correct, but on a strictly falling " +
+        "temperature run every scan walks all the way to the end for no answer.",
+      code:
+        "function dailyTemperatures(temperatures) {\n" +
+        "  const res = new Array(temperatures.length).fill(0);\n" +
+        "  for (let i = 0; i < temperatures.length; i++) {\n" +
+        "    for (let j = i + 1; j < temperatures.length; j++) {\n" +
+        "      if (temperatures[j] > temperatures[i]) { res[i] = j - i; break; }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+  ],
+};
+
+const minStackProblem: Problem = {
+  id: "stack-min-stack-design",
+  title: "Min Stack",
+  difficulty: "Medium",
+  description:
+    "Design a stack that supports push, pop, top, and retrieving the minimum element, all in O(1), exercised " +
+    "via a sequence of operations. ops[i] is one of \"push\", \"pop\", \"top\", \"getMin\"; argsList[i] holds " +
+    "that operation's arguments (empty for pop/top/getMin). push/pop return null.",
+  fnName: "minStackOperations",
+  starterCode: "function minStackOperations(ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        ["push", "push", "push", "getMin", "pop", "top", "getMin"],
+        [[-2], [0], [-3], [], [], [], []],
+      ],
+      expected: [null, null, null, -3, null, 0, -2],
+    },
+    {
+      input: [["push", "push", "getMin", "pop", "getMin"], [[5], [1], [], [], []]],
+      expected: [null, null, 1, null, 5],
+    },
+  ],
+  solution:
+    "function minStackOperations(ops, argsList) {\n" +
+    "  const stack = [];\n" +
+    "  const minStack = [];\n" +
+    "  const out = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], a = argsList[i];\n" +
+    "    if (op === 'push') {\n" +
+    "      stack.push(a[0]);\n" +
+    "      minStack.push(minStack.length === 0 ? a[0] : Math.min(minStack[minStack.length - 1], a[0]));\n" +
+    "      out.push(null);\n" +
+    "    } else if (op === 'pop') { stack.pop(); minStack.pop(); out.push(null); }\n" +
+    "    else if (op === 'top') { out.push(stack[stack.length - 1]); }\n" +
+    "    else { out.push(minStack[minStack.length - 1]); }\n" +
+    "  }\n" +
+    "  return out;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Parallel min-stack",
+      timeComplexity: "O(1) per operation",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Alongside the value stack, maintain a second stack where each slot holds the minimum seen up to that " +
+        "depth. Pushing/popping both stacks together keeps getMin a plain top-of-stack read, never a rescan.",
+      code:
+        "function minStackOperations(ops, argsList) {\n" +
+        "  const stack = [];\n" +
+        "  const minStack = [];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'push') {\n" +
+        "      stack.push(a[0]);\n" +
+        "      minStack.push(minStack.length === 0 ? a[0] : Math.min(minStack[minStack.length - 1], a[0]));\n" +
+        "      out.push(null);\n" +
+        "    } else if (op === 'pop') { stack.pop(); minStack.pop(); out.push(null); }\n" +
+        "    else if (op === 'top') { out.push(stack[stack.length - 1]); }\n" +
+        "    else { out.push(minStack[minStack.length - 1]); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — Math.min over the stack on every getMin",
+      timeComplexity: "O(1) push/pop/top, O(n) getMin",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Use a single plain stack and rescan the whole thing whenever getMin is called. Simpler to write, but " +
+        "getMin degrades to linear time — exactly the cost the parallel min-stack is designed to avoid.",
+      code:
+        "function minStackOperations(ops, argsList) {\n" +
+        "  const stack = [];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'push') { stack.push(a[0]); out.push(null); }\n" +
+        "    else if (op === 'pop') { stack.pop(); out.push(null); }\n" +
+        "    else if (op === 'top') { out.push(stack[stack.length - 1]); }\n" +
+        "    else { out.push(Math.min(...stack)); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+  ],
+};
+
 const stack: Pattern = {
   id: "stack",
   name: "Stack",
@@ -715,7 +1374,7 @@ const stack: Pattern = {
       explanation:
         "Keep the stack's elements strictly increasing or decreasing by popping before every push. Popped " +
         "elements have just found their 'next greater/smaller' neighbor.",
-      problems: [],
+      problems: [dailyTemperaturesProblem],
     },
     {
       id: "stack-balanced-parens",
@@ -739,7 +1398,7 @@ const stack: Pattern = {
       explanation:
         "Augment a stack so it can report its current minimum in O(1), typically by pushing (value, currentMin) " +
         "pairs or maintaining a parallel min-stack.",
-      problems: [],
+      problems: [minStackProblem],
     },
   ],
 };
