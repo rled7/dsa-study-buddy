@@ -6087,11 +6087,218 @@ const greedy: Pattern = {
   ],
 };
 
-const bitManipulation = stub("bit-manipulation", "Bit Manipulation", [
-  "Basic Ops",
-  "Counting Set Bits",
-  "XOR Tricks",
-]);
+const getSumProblem: Problem = {
+  id: "bit-manipulation-sum-without-arithmetic",
+  title: "Sum of Two Integers Without + or -",
+  difficulty: "Medium",
+  description:
+    "Given two integers a and b, return their sum without using the + or - operators — only bitwise " +
+    "operations are allowed.",
+  fnName: "getSum",
+  starterCode: "function getSum(a, b) {\n  \n}",
+  testCases: [
+    { input: [2, 3], expected: 5 },
+    { input: [-2, 3], expected: 1 },
+    { input: [-1, 1], expected: 0 },
+    { input: [0, 0], expected: 0 },
+    { input: [100, 200], expected: 300 },
+  ],
+  solution:
+    "function getSum(a, b) {\n" +
+    "  while (b !== 0) {\n" +
+    "    const carry = (a & b) << 1;\n" +
+    "    a = a ^ b;\n" +
+    "    b = carry;\n" +
+    "  }\n" +
+    "  return a;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Iterative XOR/AND carry propagation",
+      timeComplexity: "O(1) — bounded by 32 bit positions",
+      spaceComplexity: "O(1) — no extra space",
+      explanation:
+        "XOR adds two bits without carrying (1⊕1=0, dropping the carry); AND-then-shift-left computes exactly " +
+        "the carry that XOR dropped. Repeatedly folding that carry back in until there's nothing left to carry " +
+        "reproduces addition using only bitwise operators.",
+      code:
+        "function getSum(a, b) {\n" +
+        "  while (b !== 0) {\n" +
+        "    const carry = (a & b) << 1;\n" +
+        "    a = a ^ b;\n" +
+        "    b = carry;\n" +
+        "  }\n" +
+        "  return a;\n" +
+        "}",
+    },
+    {
+      approach: "Recursive XOR/AND carry propagation",
+      timeComplexity: "O(1) — bounded by 32 bit positions",
+      spaceComplexity: "O(32) worst-case recursion depth, bounded by bit width",
+      explanation:
+        "The exact same carry-propagation identity, expressed as 'the sum of a and b is the sum of " +
+        "(a XOR b) and their shifted carry' — recursing until the carry reaches zero instead of looping.",
+      code:
+        "function getSum(a, b) {\n" +
+        "  if (b === 0) return a;\n" +
+        "  const sum = a ^ b;\n" +
+        "  const carry = (a & b) << 1;\n" +
+        "  return getSum(sum, carry);\n" +
+        "}",
+    },
+  ],
+};
+
+const countBitsProblem: Problem = {
+  id: "bit-manipulation-counting-bits",
+  title: "Counting Bits",
+  difficulty: "Easy",
+  description:
+    "Given a non-negative integer n, return an array of length n + 1 where the value at index i is the " +
+    "number of set bits (1s) in the binary representation of i.",
+  fnName: "countBits",
+  starterCode: "function countBits(n) {\n  \n}",
+  testCases: [
+    { input: [5], expected: [0, 1, 1, 2, 1, 2] },
+    { input: [0], expected: [0] },
+    { input: [2], expected: [0, 1, 1] },
+    { input: [8], expected: [0, 1, 1, 2, 1, 2, 2, 3, 1] },
+  ],
+  solution:
+    "function countBits(n) {\n" +
+    "  const dp = new Array(n + 1).fill(0);\n" +
+    "  for (let i = 1; i <= n; i++) {\n" +
+    "    dp[i] = dp[i >> 1] + (i & 1);\n" +
+    "  }\n" +
+    "  return dp;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "DP built from the answer for i >> 1",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) for the output array",
+      explanation:
+        "Dropping i's lowest bit (i >> 1) removes exactly one bit from its popcount — plus 1 back if that " +
+        "dropped bit was itself a 1 (i & 1). Since i >> 1 is always a smaller, already-computed index, each " +
+        "answer is built in O(1) from an earlier one instead of being recounted from scratch.",
+      code:
+        "function countBits(n) {\n" +
+        "  const dp = new Array(n + 1).fill(0);\n" +
+        "  for (let i = 1; i <= n; i++) {\n" +
+        "    dp[i] = dp[i >> 1] + (i & 1);\n" +
+        "  }\n" +
+        "  return dp;\n" +
+        "}",
+    },
+    {
+      approach: "Brian Kernighan's algorithm per number",
+      timeComplexity: "O(n · average popcount) — each number's set bits are stripped one at a time",
+      spaceComplexity: "O(n) for the output array",
+      explanation:
+        "For every number from 0 to n independently, repeatedly clear the lowest set bit with x &= (x - 1) " +
+        "and count the clears — correct and still fast, but each number is recounted from nothing instead of " +
+        "reusing any earlier result.",
+      code:
+        "function countBits(n) {\n" +
+        "  const result = [];\n" +
+        "  for (let i = 0; i <= n; i++) {\n" +
+        "    let count = 0, x = i;\n" +
+        "    while (x) { x &= (x - 1); count++; }\n" +
+        "    result.push(count);\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+  ],
+};
+
+const singleNumberProblem: Problem = {
+  id: "bit-manipulation-single-number",
+  title: "Single Number",
+  difficulty: "Easy",
+  description:
+    "Given an array where every element appears exactly twice except for one which appears exactly once, " +
+    "return that single element.",
+  fnName: "singleNumber",
+  starterCode: "function singleNumber(nums) {\n  \n}",
+  testCases: [
+    { input: [[2, 2, 1]], expected: 1 },
+    { input: [[4, 1, 2, 1, 2]], expected: 4 },
+    { input: [[1]], expected: 1 },
+    { input: [[0, 1, 0]], expected: 1 },
+    { input: [[5, 3, 5, 3, 7]], expected: 7 },
+  ],
+  solution:
+    "function singleNumber(nums) {\n" +
+    "  let result = 0;\n" +
+    "  for (const n of nums) result ^= n;\n" +
+    "  return result;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "XOR accumulation",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1) — one accumulator",
+      explanation:
+        "XOR is its own inverse and commutative/associative, so XOR-ing every element together cancels every " +
+        "pair to zero (x ^ x = 0) and leaves only the unpaired element — no extra memory needed to track " +
+        "what's been seen.",
+      code:
+        "function singleNumber(nums) {\n" +
+        "  let result = 0;\n" +
+        "  for (const n of nums) result ^= n;\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      approach: "Frequency map",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) for the frequency map",
+      explanation:
+        "Count occurrences of every value in a hash map, then scan the map for the one entry with count 1. " +
+        "Correct and still linear time, but stores every distinct value instead of using the XOR " +
+        "cancellation trick that needs no extra memory at all.",
+      code:
+        "function singleNumber(nums) {\n" +
+        "  const counts = new Map();\n" +
+        "  for (const n of nums) counts.set(n, (counts.get(n) || 0) + 1);\n" +
+        "  for (const [k, v] of counts) if (v === 1) return k;\n" +
+        "}",
+    },
+  ],
+};
+
+const bitManipulation: Pattern = {
+  id: "bit-manipulation",
+  name: "Bit Manipulation",
+  subpatterns: [
+    {
+      id: "bit-manipulation-basic-ops",
+      name: "Basic Ops",
+      explanation:
+        "AND, OR, XOR, NOT, and shifts are the primitives everything else in this pattern is built from — " +
+        "here they're combined to reproduce addition itself, without the arithmetic operators that normally " +
+        "hide the bit-level work.",
+      problems: [getSumProblem],
+    },
+    {
+      id: "bit-manipulation-counting-set-bits",
+      name: "Counting Set Bits",
+      explanation:
+        "Counting how many 1 bits a number has shows up constantly as a subroutine — either directly via " +
+        "bit-clearing tricks, or built up with DP by reusing the popcount of a related, smaller number.",
+      problems: [countBitsProblem],
+    },
+    {
+      id: "bit-manipulation-xor-tricks",
+      name: "XOR Tricks",
+      explanation:
+        "XOR's self-canceling property (x ^ x = 0, x ^ 0 = x) turns 'find the odd one out' problems into a " +
+        "single linear pass with no extra memory — one of the most reused tricks in bit manipulation.",
+      problems: [singleNumberProblem],
+    },
+  ],
+};
 
 const advanced = stub("advanced", "Advanced", ["Two Pointers", "Meet in the Middle", "Sweep Line"]);
 
