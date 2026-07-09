@@ -4694,7 +4694,414 @@ const heap: Pattern = {
   ],
 };
 
-const graphs = stub("graphs", "Graphs", ["BFS", "DFS", "Dijkstra", "Topological Sort"]);
+const shortestPathBFSProblem: Problem = {
+  id: "graphs-shortest-path-bfs",
+  title: "Shortest Path in an Unweighted Graph",
+  difficulty: "Medium",
+  description:
+    "Given n nodes (0 to n-1), a list of undirected edges [u, v], and a source node, return an array where " +
+    "index i holds the number of edges on the shortest path from source to node i, or -1 if i is unreachable.",
+  fnName: "shortestPathBFS",
+  starterCode: "function shortestPathBFS(n, edges, source) {\n  \n}",
+  testCases: [
+    { input: [6, [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4]], 0], expected: [0, 1, 1, 2, 3, -1] },
+    { input: [1, [], 0], expected: [0] },
+    { input: [4, [[0, 1], [1, 2], [2, 3]], 0], expected: [0, 1, 2, 3] },
+    { input: [3, [[0, 1]], 2], expected: [-1, -1, 0] },
+  ],
+  solution:
+    "function shortestPathBFS(n, edges, source) {\n" +
+    "  const adj = Array.from({ length: n }, () => []);\n" +
+    "  for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }\n" +
+    "  const dist = new Array(n).fill(-1);\n" +
+    "  dist[source] = 0;\n" +
+    "  const queue = [source];\n" +
+    "  let head = 0;\n" +
+    "  while (head < queue.length) {\n" +
+    "    const node = queue[head++];\n" +
+    "    for (const next of adj[node]) {\n" +
+    "      if (dist[next] === -1) { dist[next] = dist[node] + 1; queue.push(next); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return dist;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "BFS",
+      timeComplexity: "O(V + E)",
+      spaceComplexity: "O(V)",
+      explanation:
+        "BFS explores nodes in order of distance from the source, since it visits everything at distance d " +
+        "before anything at distance d+1. Each node is enqueued once, so a distance is only ever set the first " +
+        "(shortest) time it's reached.",
+      code:
+        "function shortestPathBFS(n, edges, source) {\n" +
+        "  const adj = Array.from({ length: n }, () => []);\n" +
+        "  for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }\n" +
+        "  const dist = new Array(n).fill(-1);\n" +
+        "  dist[source] = 0;\n" +
+        "  const queue = [source];\n" +
+        "  let head = 0;\n" +
+        "  while (head < queue.length) {\n" +
+        "    const node = queue[head++];\n" +
+        "    for (const next of adj[node]) {\n" +
+        "      if (dist[next] === -1) { dist[next] = dist[node] + 1; queue.push(next); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return dist;\n" +
+        "}",
+    },
+    {
+      approach: "Bellman-Ford-style relaxation (brute force)",
+      timeComplexity: "O(V · E)",
+      spaceComplexity: "O(V)",
+      explanation:
+        "Treat every edge as weight 1 and relax all edges repeatedly (up to V-1 passes, stopping early if a " +
+        "full pass changes nothing). Correct for unweighted shortest paths, but does far more work than BFS " +
+        "since it re-examines every edge on every pass instead of only the newly-discovered frontier.",
+      code:
+        "function shortestPathBFS(n, edges, source) {\n" +
+        "  const dist = new Array(n).fill(Infinity);\n" +
+        "  dist[source] = 0;\n" +
+        "  for (let iter = 0; iter < n - 1; iter++) {\n" +
+        "    let changed = false;\n" +
+        "    for (const [u, v] of edges) {\n" +
+        "      if (dist[u] + 1 < dist[v]) { dist[v] = dist[u] + 1; changed = true; }\n" +
+        "      if (dist[v] + 1 < dist[u]) { dist[u] = dist[v] + 1; changed = true; }\n" +
+        "    }\n" +
+        "    if (!changed) break;\n" +
+        "  }\n" +
+        "  return dist.map((d) => (d === Infinity ? -1 : d));\n" +
+        "}",
+    },
+  ],
+};
+
+const countComponentsProblem: Problem = {
+  id: "graphs-connected-components",
+  title: "Number of Connected Components in an Undirected Graph",
+  difficulty: "Medium",
+  description:
+    "Given n nodes (0 to n-1) and a list of undirected edges [u, v], return the number of connected components.",
+  fnName: "countComponents",
+  starterCode: "function countComponents(n, edges) {\n  \n}",
+  testCases: [
+    { input: [5, [[0, 1], [1, 2], [3, 4]]], expected: 2 },
+    { input: [5, [[0, 1], [1, 2], [2, 3], [3, 4]]], expected: 1 },
+    { input: [1, []], expected: 1 },
+    { input: [4, []], expected: 4 },
+  ],
+  solution:
+    "function countComponents(n, edges) {\n" +
+    "  const adj = Array.from({ length: n }, () => []);\n" +
+    "  for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }\n" +
+    "  const visited = new Array(n).fill(false);\n" +
+    "  let count = 0;\n" +
+    "  function dfs(node) {\n" +
+    "    visited[node] = true;\n" +
+    "    for (const next of adj[node]) if (!visited[next]) dfs(next);\n" +
+    "  }\n" +
+    "  for (let i = 0; i < n; i++) if (!visited[i]) { count++; dfs(i); }\n" +
+    "  return count;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "DFS from every unvisited node",
+      timeComplexity: "O(V + E)",
+      spaceComplexity: "O(V) — visited array plus recursion stack",
+      explanation:
+        "Each time a DFS starting from an unvisited node finishes, everything it touched forms one component. " +
+        "Count how many times a fresh DFS has to be launched.",
+      code:
+        "function countComponents(n, edges) {\n" +
+        "  const adj = Array.from({ length: n }, () => []);\n" +
+        "  for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }\n" +
+        "  const visited = new Array(n).fill(false);\n" +
+        "  let count = 0;\n" +
+        "  function dfs(node) {\n" +
+        "    visited[node] = true;\n" +
+        "    for (const next of adj[node]) if (!visited[next]) dfs(next);\n" +
+        "  }\n" +
+        "  for (let i = 0; i < n; i++) if (!visited[i]) { count++; dfs(i); }\n" +
+        "  return count;\n" +
+        "}",
+    },
+    {
+      approach: "Union-Find (disjoint set)",
+      timeComplexity: "O(E · α(V)) — α is the inverse Ackermann function, effectively constant",
+      spaceComplexity: "O(V) — the parent array",
+      explanation:
+        "Union every edge's two endpoints into the same set, using path compression to keep find() nearly " +
+        "O(1). The number of distinct roots left at the end is the number of components.",
+      code:
+        "function countComponents(n, edges) {\n" +
+        "  const parent = Array.from({ length: n }, (_, i) => i);\n" +
+        "  function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }\n" +
+        "  function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; }\n" +
+        "  for (const [u, v] of edges) union(u, v);\n" +
+        "  const roots = new Set();\n" +
+        "  for (let i = 0; i < n; i++) roots.add(find(i));\n" +
+        "  return roots.size;\n" +
+        "}",
+    },
+  ],
+};
+
+const networkDelayTimeProblem: Problem = {
+  id: "graphs-network-delay-time",
+  title: "Network Delay Time",
+  difficulty: "Medium",
+  description:
+    "n nodes (1 to n) receive a signal sent from node k, propagating along directed weighted edges times[i] = " +
+    "[u, v, w] (w = travel time from u to v). Return the time for every node to receive the signal (the max " +
+    "over all shortest distances from k), or -1 if some node is unreachable.",
+  fnName: "networkDelayTime",
+  starterCode: "function networkDelayTime(times, n, k) {\n  \n}",
+  testCases: [
+    { input: [[[2, 1, 1], [2, 3, 1], [3, 4, 1]], 4, 2], expected: 2 },
+    { input: [[[1, 2, 1]], 2, 1], expected: 1 },
+    { input: [[[1, 2, 1]], 2, 2], expected: -1 },
+    { input: [[[1, 2, 1], [2, 3, 2], [1, 3, 4]], 3, 1], expected: 3 },
+  ],
+  solution:
+    "function networkDelayTime(times, n, k) {\n" +
+    "  const adj = Array.from({ length: n + 1 }, () => []);\n" +
+    "  for (const [u, v, w] of times) adj[u].push([v, w]);\n" +
+    "  const dist = new Array(n + 1).fill(Infinity);\n" +
+    "  dist[k] = 0;\n" +
+    "  const heap = [[0, k]];\n" +
+    "  function siftUp(i) {\n" +
+    "    while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }\n" +
+    "  }\n" +
+    "  function siftDown(i) {\n" +
+    "    const size = heap.length;\n" +
+    "    while (true) {\n" +
+    "      let smallest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+    "      if (l < size && heap[l][0] < heap[smallest][0]) smallest = l;\n" +
+    "      if (r < size && heap[r][0] < heap[smallest][0]) smallest = r;\n" +
+    "      if (smallest === i) break;\n" +
+    "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]]; i = smallest;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  while (heap.length) {\n" +
+    "    const [d, node] = heap[0];\n" +
+    "    const last = heap.pop();\n" +
+    "    if (heap.length) { heap[0] = last; siftDown(0); }\n" +
+    "    if (d > dist[node]) continue;\n" +
+    "    for (const [next, w] of adj[node]) {\n" +
+    "      const nd = d + w;\n" +
+    "      if (nd < dist[next]) { dist[next] = nd; heap.push([nd, next]); siftUp(heap.length - 1); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  let maxD = 0;\n" +
+    "  for (let i = 1; i <= n; i++) {\n" +
+    "    if (dist[i] === Infinity) return -1;\n" +
+    "    maxD = Math.max(maxD, dist[i]);\n" +
+    "  }\n" +
+    "  return maxD;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Dijkstra with a min-heap",
+      timeComplexity: "O((V + E) log V)",
+      spaceComplexity: "O(V + E) — adjacency list plus the heap",
+      explanation:
+        "Always expand the closest not-yet-finalized node next. A min-heap keyed on current best distance " +
+        "makes 'closest next' an O(log V) operation instead of a linear scan, and stale heap entries (a node " +
+        "reached again at a worse distance) are just skipped when popped.",
+      code:
+        "function networkDelayTime(times, n, k) {\n" +
+        "  const adj = Array.from({ length: n + 1 }, () => []);\n" +
+        "  for (const [u, v, w] of times) adj[u].push([v, w]);\n" +
+        "  const dist = new Array(n + 1).fill(Infinity);\n" +
+        "  dist[k] = 0;\n" +
+        "  const heap = [[0, k]];\n" +
+        "  function siftUp(i) {\n" +
+        "    while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }\n" +
+        "  }\n" +
+        "  function siftDown(i) {\n" +
+        "    const size = heap.length;\n" +
+        "    while (true) {\n" +
+        "      let smallest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+        "      if (l < size && heap[l][0] < heap[smallest][0]) smallest = l;\n" +
+        "      if (r < size && heap[r][0] < heap[smallest][0]) smallest = r;\n" +
+        "      if (smallest === i) break;\n" +
+        "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]]; i = smallest;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  while (heap.length) {\n" +
+        "    const [d, node] = heap[0];\n" +
+        "    const last = heap.pop();\n" +
+        "    if (heap.length) { heap[0] = last; siftDown(0); }\n" +
+        "    if (d > dist[node]) continue;\n" +
+        "    for (const [next, w] of adj[node]) {\n" +
+        "      const nd = d + w;\n" +
+        "      if (nd < dist[next]) { dist[next] = nd; heap.push([nd, next]); siftUp(heap.length - 1); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  let maxD = 0;\n" +
+        "  for (let i = 1; i <= n; i++) {\n" +
+        "    if (dist[i] === Infinity) return -1;\n" +
+        "    maxD = Math.max(maxD, dist[i]);\n" +
+        "  }\n" +
+        "  return maxD;\n" +
+        "}",
+    },
+    {
+      approach: "Bellman-Ford (brute force)",
+      timeComplexity: "O(V · E)",
+      spaceComplexity: "O(V) — just the distance array, no heap or adjacency list needed",
+      explanation:
+        "Relax every edge, up to V-1 times over. No priority ordering at all — correct because after V-1 " +
+        "full passes, every shortest path (which has at most V-1 edges) is guaranteed to have been found.",
+      code:
+        "function networkDelayTime(times, n, k) {\n" +
+        "  const dist = new Array(n + 1).fill(Infinity);\n" +
+        "  dist[k] = 0;\n" +
+        "  for (let i = 0; i < n - 1; i++) {\n" +
+        "    let changed = false;\n" +
+        "    for (const [u, v, w] of times) {\n" +
+        "      if (dist[u] + w < dist[v]) { dist[v] = dist[u] + w; changed = true; }\n" +
+        "    }\n" +
+        "    if (!changed) break;\n" +
+        "  }\n" +
+        "  let maxD = 0;\n" +
+        "  for (let i = 1; i <= n; i++) {\n" +
+        "    if (dist[i] === Infinity) return -1;\n" +
+        "    maxD = Math.max(maxD, dist[i]);\n" +
+        "  }\n" +
+        "  return maxD;\n" +
+        "}",
+    },
+  ],
+};
+
+const canFinishCoursesProblem: Problem = {
+  id: "graphs-course-schedule",
+  title: "Course Schedule",
+  difficulty: "Medium",
+  description:
+    "Given numCourses (0 to numCourses-1) and prerequisites[i] = [course, pre] meaning 'course' requires " +
+    "'pre' to be taken first, return whether it's possible to finish all courses (equivalently: does the " +
+    "prerequisite graph contain a cycle?).",
+  fnName: "canFinishCourses",
+  starterCode: "function canFinishCourses(numCourses, prerequisites) {\n  \n}",
+  testCases: [
+    { input: [2, [[1, 0]]], expected: true },
+    { input: [2, [[1, 0], [0, 1]]], expected: false },
+    { input: [4, [[1, 0], [2, 0], [3, 1], [3, 2]]], expected: true },
+    { input: [1, []], expected: true },
+    { input: [3, [[0, 1], [1, 2], [2, 0]]], expected: false },
+  ],
+  solution:
+    "function canFinishCourses(numCourses, prerequisites) {\n" +
+    "  const adj = Array.from({ length: numCourses }, () => []);\n" +
+    "  const indegree = new Array(numCourses).fill(0);\n" +
+    "  for (const [course, pre] of prerequisites) { adj[pre].push(course); indegree[course]++; }\n" +
+    "  const queue = [];\n" +
+    "  for (let i = 0; i < numCourses; i++) if (indegree[i] === 0) queue.push(i);\n" +
+    "  let visited = 0;\n" +
+    "  let head = 0;\n" +
+    "  while (head < queue.length) {\n" +
+    "    const node = queue[head++];\n" +
+    "    visited++;\n" +
+    "    for (const next of adj[node]) { indegree[next]--; if (indegree[next] === 0) queue.push(next); }\n" +
+    "  }\n" +
+    "  return visited === numCourses;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Kahn's algorithm (BFS topological sort)",
+      timeComplexity: "O(V + E)",
+      spaceComplexity: "O(V) — in-degree array plus the queue",
+      explanation:
+        "Repeatedly peel off nodes with no remaining unmet prerequisites (in-degree 0), decrementing their " +
+        "neighbors' in-degrees as they're removed. If every node eventually gets peeled off, there's no cycle " +
+        "— a cycle's nodes always have an in-degree stuck above 0.",
+      code:
+        "function canFinishCourses(numCourses, prerequisites) {\n" +
+        "  const adj = Array.from({ length: numCourses }, () => []);\n" +
+        "  const indegree = new Array(numCourses).fill(0);\n" +
+        "  for (const [course, pre] of prerequisites) { adj[pre].push(course); indegree[course]++; }\n" +
+        "  const queue = [];\n" +
+        "  for (let i = 0; i < numCourses; i++) if (indegree[i] === 0) queue.push(i);\n" +
+        "  let visited = 0;\n" +
+        "  let head = 0;\n" +
+        "  while (head < queue.length) {\n" +
+        "    const node = queue[head++];\n" +
+        "    visited++;\n" +
+        "    for (const next of adj[node]) { indegree[next]--; if (indegree[next] === 0) queue.push(next); }\n" +
+        "  }\n" +
+        "  return visited === numCourses;\n" +
+        "}",
+    },
+    {
+      approach: "DFS with 3-color cycle detection",
+      timeComplexity: "O(V + E)",
+      spaceComplexity: "O(V) — the color array plus recursion stack",
+      explanation:
+        "Mark each node unvisited (0), in-progress (1), or done (2). A DFS that reaches a node already " +
+        "marked in-progress has found a back edge — a cycle. Only marking done once all its descendants are " +
+        "fully explored is what makes this distinct from just tracking a plain visited set.",
+      code:
+        "function canFinishCourses(numCourses, prerequisites) {\n" +
+        "  const adj = Array.from({ length: numCourses }, () => []);\n" +
+        "  for (const [course, pre] of prerequisites) adj[pre].push(course);\n" +
+        "  const state = new Array(numCourses).fill(0);\n" +
+        "  function hasCycle(node) {\n" +
+        "    if (state[node] === 1) return true;\n" +
+        "    if (state[node] === 2) return false;\n" +
+        "    state[node] = 1;\n" +
+        "    for (const next of adj[node]) if (hasCycle(next)) return true;\n" +
+        "    state[node] = 2;\n" +
+        "    return false;\n" +
+        "  }\n" +
+        "  for (let i = 0; i < numCourses; i++) if (hasCycle(i)) return false;\n" +
+        "  return true;\n" +
+        "}",
+    },
+  ],
+};
+
+const graphs: Pattern = {
+  id: "graphs",
+  name: "Graphs",
+  subpatterns: [
+    {
+      id: "graphs-bfs",
+      name: "BFS",
+      explanation:
+        "Breadth-first search explores a graph one distance-layer at a time via a queue, which makes it the " +
+        "natural tool for shortest-path questions on unweighted graphs.",
+      problems: [shortestPathBFSProblem],
+    },
+    {
+      id: "graphs-dfs",
+      name: "DFS",
+      explanation:
+        "Depth-first search commits to one path as deep as it goes before backtracking, which makes it a " +
+        "natural fit for questions about reachability, connectivity, and structure (cycles, components).",
+      problems: [countComponentsProblem],
+    },
+    {
+      id: "graphs-dijkstra",
+      name: "Dijkstra",
+      explanation:
+        "For weighted graphs with non-negative edges, Dijkstra's algorithm always finalizes the currently- " +
+        "closest unfinished node next, guaranteeing each node's shortest distance is locked in the moment it's " +
+        "popped from the priority queue.",
+      problems: [networkDelayTimeProblem],
+    },
+    {
+      id: "graphs-topological-sort",
+      name: "Topological Sort",
+      explanation:
+        "For a directed acyclic graph, a topological order lists every node so that each edge points from " +
+        "earlier to later in the list — only possible at all when the graph has no cycle.",
+      problems: [canFinishCoursesProblem],
+    },
+  ],
+};
 
 const trie = stub("trie", "Trie", ["Insert/Search", "Prefix Problems", "Word Break"]);
 
