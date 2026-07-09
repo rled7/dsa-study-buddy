@@ -3983,12 +3983,371 @@ const trees: Pattern = {
   ],
 };
 
-const recursion = stub("recursion", "Recursion", [
-  "Backtracking",
-  "Divide & Conquer",
-  "Tree/Graph Recursion",
-  "Memoization",
-]);
+const subsetsProblem: Problem = {
+  id: "recursion-subsets",
+  title: "Subsets",
+  difficulty: "Medium",
+  description:
+    "Given an array of distinct integers, return every possible subset (the power set), including the " +
+    "empty set and the full array itself. Order of subsets and order of elements within a subset don't matter.",
+  fnName: "subsets",
+  starterCode: "function subsets(nums) {\n  \n}",
+  testCases: [
+    { input: [[1, 2, 3]], expected: [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]] },
+    { input: [[0]], expected: [[], [0]] },
+    { input: [[]], expected: [[]] },
+    { input: [[1, 2]], expected: [[], [1], [2], [1, 2]] },
+  ],
+  normalize: (x) =>
+    Array.isArray(x)
+      ? x
+          .map((a) => (Array.isArray(a) ? [...a].sort((p, q) => p - q) : a))
+          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+      : x,
+  solution:
+    "function subsets(nums) {\n" +
+    "  const result = [];\n" +
+    "  function backtrack(start, path) {\n" +
+    "    result.push([...path]);\n" +
+    "    for (let i = start; i < nums.length; i++) {\n" +
+    "      path.push(nums[i]);\n" +
+    "      backtrack(i + 1, path);\n" +
+    "      path.pop();\n" +
+    "    }\n" +
+    "  }\n" +
+    "  backtrack(0, []);\n" +
+    "  return result;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Backtracking (DFS include/exclude)",
+      timeComplexity: "O(n·2ⁿ)",
+      spaceComplexity: "O(n) extra — recursion depth plus the path buffer (not counting output)",
+      explanation:
+        "At each index, either it's in the current subset or it isn't. Record the path so far as a subset " +
+        "on every call, recurse further with each remaining element added, then backtrack by removing it.",
+      code:
+        "function subsets(nums) {\n" +
+        "  const result = [];\n" +
+        "  function backtrack(start, path) {\n" +
+        "    result.push([...path]);\n" +
+        "    for (let i = start; i < nums.length; i++) {\n" +
+        "      path.push(nums[i]);\n" +
+        "      backtrack(i + 1, path);\n" +
+        "      path.pop();\n" +
+        "    }\n" +
+        "  }\n" +
+        "  backtrack(0, []);\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      approach: "Iterative bitmask enumeration",
+      timeComplexity: "O(n·2ⁿ)",
+      spaceComplexity: "O(1) extra — no recursion, just a counter and an inner loop (not counting output)",
+      explanation:
+        "Every subset corresponds to one n-bit number: bit i set means nums[i] is included. Count from 0 to " +
+        "2ⁿ-1 and read off each mask's bits to build that subset — no recursion needed at all.",
+      code:
+        "function subsets(nums) {\n" +
+        "  const n = nums.length;\n" +
+        "  const result = [];\n" +
+        "  for (let mask = 0; mask < (1 << n); mask++) {\n" +
+        "    const subset = [];\n" +
+        "    for (let i = 0; i < n; i++) if (mask & (1 << i)) subset.push(nums[i]);\n" +
+        "    result.push(subset);\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+  ],
+};
+
+const mergeSortProblem: Problem = {
+  id: "recursion-merge-sort",
+  title: "Sort an Array (Merge Sort)",
+  difficulty: "Medium",
+  description:
+    "Given an array of integers, return it sorted in ascending order, without relying on a built-in sort.",
+  fnName: "mergeSortArray",
+  starterCode: "function mergeSortArray(nums) {\n  \n}",
+  testCases: [
+    { input: [[5, 2, 4, 1, 3]], expected: [1, 2, 3, 4, 5] },
+    { input: [[]], expected: [] },
+    { input: [[1]], expected: [1] },
+    { input: [[3, 3, 1, 2]], expected: [1, 2, 3, 3] },
+    { input: [[-5, 0, 5, -3]], expected: [-5, -3, 0, 5] },
+  ],
+  solution:
+    "function mergeSortArray(nums) {\n" +
+    "  if (nums.length <= 1) return nums.slice();\n" +
+    "  const mid = Math.floor(nums.length / 2);\n" +
+    "  const left = mergeSortArray(nums.slice(0, mid));\n" +
+    "  const right = mergeSortArray(nums.slice(mid));\n" +
+    "  const merged = [];\n" +
+    "  let i = 0, j = 0;\n" +
+    "  while (i < left.length && j < right.length) {\n" +
+    "    if (left[i] <= right[j]) merged.push(left[i++]); else merged.push(right[j++]);\n" +
+    "  }\n" +
+    "  while (i < left.length) merged.push(left[i++]);\n" +
+    "  while (j < right.length) merged.push(right[j++]);\n" +
+    "  return merged;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Merge sort (divide & conquer)",
+      timeComplexity: "O(n log n)",
+      spaceComplexity: "O(n) — merged output buffers at every level",
+      explanation:
+        "Split the array in half, recursively sort each half, then merge the two sorted halves with a " +
+        "single linear pass. The split always happens in the middle, so recursion depth is log n.",
+      code:
+        "function mergeSortArray(nums) {\n" +
+        "  if (nums.length <= 1) return nums.slice();\n" +
+        "  const mid = Math.floor(nums.length / 2);\n" +
+        "  const left = mergeSortArray(nums.slice(0, mid));\n" +
+        "  const right = mergeSortArray(nums.slice(mid));\n" +
+        "  const merged = [];\n" +
+        "  let i = 0, j = 0;\n" +
+        "  while (i < left.length && j < right.length) {\n" +
+        "    if (left[i] <= right[j]) merged.push(left[i++]); else merged.push(right[j++]);\n" +
+        "  }\n" +
+        "  while (i < left.length) merged.push(left[i++]);\n" +
+        "  while (j < right.length) merged.push(right[j++]);\n" +
+        "  return merged;\n" +
+        "}",
+    },
+    {
+      approach: "Insertion sort (brute force)",
+      timeComplexity: "O(n²)",
+      spaceComplexity: "O(1) extra — sorts in place aside from the initial copy",
+      explanation:
+        "Grow a sorted prefix one element at a time: take the next element and shift it leftward past every " +
+        "already-sorted element bigger than it. Simple, but quadratic on average and worst case.",
+      code:
+        "function mergeSortArray(nums) {\n" +
+        "  const arr = nums.slice();\n" +
+        "  for (let i = 1; i < arr.length; i++) {\n" +
+        "    let j = i, cur = arr[i];\n" +
+        "    while (j > 0 && arr[j - 1] > cur) { arr[j] = arr[j - 1]; j--; }\n" +
+        "    arr[j] = cur;\n" +
+        "  }\n" +
+        "  return arr;\n" +
+        "}",
+    },
+  ],
+};
+
+const maxDepthProblem: Problem = {
+  id: "recursion-max-depth",
+  title: "Maximum Depth of Binary Tree",
+  difficulty: "Easy",
+  description:
+    "Given a binary tree (level-order array with null gaps), return its maximum depth — the number of nodes " +
+    "along the longest path from the root down to the farthest leaf.",
+  fnName: "maxDepth",
+  starterCode: "function maxDepth(arr) {\n  \n}",
+  testCases: [
+    { input: [[3, 9, 20, null, null, 15, 7]], expected: 3 },
+    { input: [[1, null, 2]], expected: 2 },
+    { input: [[]], expected: 0 },
+    { input: [[1]], expected: 1 },
+  ],
+  solution:
+    "function buildTree(arr) {\n" +
+    "  if (!arr.length || arr[0] === null) return null;\n" +
+    "  const root = { val: arr[0], left: null, right: null };\n" +
+    "  const queue = [root];\n" +
+    "  let i = 1;\n" +
+    "  while (queue.length && i < arr.length) {\n" +
+    "    const node = queue.shift();\n" +
+    "    if (i < arr.length) {\n" +
+    "      const leftVal = arr[i++];\n" +
+    "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+    "    }\n" +
+    "    if (i < arr.length) {\n" +
+    "      const rightVal = arr[i++];\n" +
+    "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return root;\n" +
+    "}\n" +
+    "function maxDepth(arr) {\n" +
+    "  const root = buildTree(arr);\n" +
+    "  function depth(node) { return node ? 1 + Math.max(depth(node.left), depth(node.right)) : 0; }\n" +
+    "  return depth(root);\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Recursive DFS",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(h) recursion stack (tree height h)",
+      explanation:
+        "A subtree's depth is 1 plus the deeper of its two children's depths. An empty tree has depth 0 — " +
+        "the base case that makes the recursion bottom out.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function maxDepth(arr) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  function depth(node) { return node ? 1 + Math.max(depth(node.left), depth(node.right)) : 0; }\n" +
+        "  return depth(root);\n" +
+        "}",
+    },
+    {
+      approach: "Iterative BFS, counting levels",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) — the queue can hold a full level's worth of nodes",
+      explanation:
+        "Process the tree level by level with a queue, incrementing a counter once per level. The final " +
+        "count, once the queue empties, is the depth.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function maxDepth(arr) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  if (!root) return 0;\n" +
+        "  let d = 0;\n" +
+        "  let queue = [root];\n" +
+        "  while (queue.length) {\n" +
+        "    d++;\n" +
+        "    const next = [];\n" +
+        "    for (const node of queue) { if (node.left) next.push(node.left); if (node.right) next.push(node.right); }\n" +
+        "    queue = next;\n" +
+        "  }\n" +
+        "  return d;\n" +
+        "}",
+    },
+  ],
+};
+
+const fibProblem: Problem = {
+  id: "recursion-fibonacci",
+  title: "Fibonacci Number",
+  difficulty: "Easy",
+  description:
+    "Given n, return the n-th Fibonacci number (fib(0) = 0, fib(1) = 1, fib(n) = fib(n-1) + fib(n-2)).",
+  fnName: "fib",
+  starterCode: "function fib(n) {\n  \n}",
+  testCases: [
+    { input: [0], expected: 0 },
+    { input: [1], expected: 1 },
+    { input: [5], expected: 5 },
+    { input: [10], expected: 55 },
+    { input: [15], expected: 610 },
+  ],
+  solution:
+    "function fib(n) {\n" +
+    "  if (n <= 1) return n;\n" +
+    "  return fib(n - 1) + fib(n - 2);\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Naive recursion",
+      timeComplexity: "O(2ⁿ)",
+      spaceComplexity: "O(n) recursion stack",
+      explanation:
+        "Directly translate the recurrence into code. Correct, but fib(k) gets recomputed from scratch " +
+        "every time it's needed by a different branch — the call tree's size explodes exponentially.",
+      code:
+        "function fib(n) {\n" +
+        "  if (n <= 1) return n;\n" +
+        "  return fib(n - 1) + fib(n - 2);\n" +
+        "}",
+    },
+    {
+      approach: "Top-down memoization",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) — memo table plus recursion stack",
+      explanation:
+        "Same recursive structure, but cache each fib(k) the first time it's computed. Every subsequent " +
+        "call for that k is an O(1) lookup instead of a re-derivation, collapsing the exponential blowup.",
+      code:
+        "function fib(n) {\n" +
+        "  const memo = new Map();\n" +
+        "  function helper(k) {\n" +
+        "    if (k <= 1) return k;\n" +
+        "    if (memo.has(k)) return memo.get(k);\n" +
+        "    const result = helper(k - 1) + helper(k - 2);\n" +
+        "    memo.set(k, result);\n" +
+        "    return result;\n" +
+        "  }\n" +
+        "  return helper(n);\n" +
+        "}",
+    },
+  ],
+};
+
+const recursion: Pattern = {
+  id: "recursion",
+  name: "Recursion",
+  subpatterns: [
+    {
+      id: "recursion-backtracking",
+      name: "Backtracking",
+      explanation:
+        "Explore a decision tree by choosing, recursing, then undoing the choice ('backtracking') to try " +
+        "the next option — useful whenever you need every valid combination, permutation, or arrangement.",
+      problems: [subsetsProblem],
+    },
+    {
+      id: "recursion-divide-and-conquer",
+      name: "Divide & Conquer",
+      explanation:
+        "Split a problem into independent subproblems, solve each recursively, then combine their results — " +
+        "the combine step is what separates this from plain recursion.",
+      problems: [mergeSortProblem],
+    },
+    {
+      id: "recursion-tree-graph-recursion",
+      name: "Tree/Graph Recursion",
+      explanation:
+        "Recursion mirrors a tree's or graph's own recursive structure: a node's answer is defined in terms " +
+        "of its children's answers, with the base case being an empty (null) node.",
+      problems: [maxDepthProblem],
+    },
+    {
+      id: "recursion-memoization",
+      name: "Memoization",
+      explanation:
+        "Cache the result of each unique recursive call so overlapping subproblems are computed once instead " +
+        "of repeatedly — the fix for recursion trees that revisit the same inputs exponentially often.",
+      problems: [fibProblem],
+    },
+  ],
+};
 
 const heap = stub("heap", "Heap", ["Priority Queue", "Top-K", "Heapify/Heap Sort"]);
 
