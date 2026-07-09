@@ -2658,19 +2658,760 @@ function stub(id: string, name: string, subpatternNames: string[]): Pattern {
   };
 }
 
-const queueDeque = stub("queue-deque", "Queue / Deque", [
-  "Sliding Window Maximum",
-  "First Negative in Window",
-  "Deque Optimization",
-  "Design Queue",
-]);
+const maxSlidingWindowProblem: Problem = {
+  id: "queue-deque-max-sliding-window",
+  title: "Sliding Window Maximum",
+  difficulty: "Hard",
+  description:
+    "Given an array nums and a window size k, return an array of the maximum value in each window as it " +
+    "slides from the start of the array to the end.",
+  fnName: "maxSlidingWindow",
+  starterCode: "function maxSlidingWindow(nums, k) {\n  // your code here\n}",
+  testCases: [
+    { input: [[1, 3, -1, -3, 5, 3, 6, 7], 3], expected: [3, 3, 5, 5, 6, 7] },
+    { input: [[1], 1], expected: [1] },
+    { input: [[9, 11], 2], expected: [11] },
+    { input: [[4, -2], 2], expected: [4] },
+    { input: [[1, 3, 1, 2, 0, 5], 3], expected: [3, 3, 2, 5] },
+  ],
+  solution:
+    "function maxSlidingWindow(nums, k) {\n" +
+    "  const dq = [];\n" +
+    "  const res = [];\n" +
+    "  for (let i = 0; i < nums.length; i++) {\n" +
+    "    while (dq.length && dq[0] <= i - k) dq.shift();\n" +
+    "    while (dq.length && nums[dq[dq.length - 1]] < nums[i]) dq.pop();\n" +
+    "    dq.push(i);\n" +
+    "    if (i >= k - 1) res.push(nums[dq[0]]);\n" +
+    "  }\n" +
+    "  return res;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Monotonic Deque",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(k)",
+      explanation:
+        "Keep a deque of indices whose values are decreasing front-to-back. Evict indices that fell out of the " +
+        "window from the front, and evict indices with a smaller value than the incoming one from the back " +
+        "(they can never be the max again). The front is always the current window's max.",
+      code:
+        "function maxSlidingWindow(nums, k) {\n" +
+        "  const dq = [];\n" +
+        "  const res = [];\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    while (dq.length && dq[0] <= i - k) dq.shift();\n" +
+        "    while (dq.length && nums[dq[dq.length - 1]] < nums[i]) dq.pop();\n" +
+        "    dq.push(i);\n" +
+        "    if (i >= k - 1) res.push(nums[dq[0]]);\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — Math.max over each window",
+      timeComplexity: "O(n * k)",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "Slice out every window and scan it for the max. Correct, but re-examines every element in the window " +
+        "again on each slide instead of reusing work from the previous window.",
+      code:
+        "function maxSlidingWindow(nums, k) {\n" +
+        "  const res = [];\n" +
+        "  for (let i = 0; i + k <= nums.length; i++) {\n" +
+        "    res.push(Math.max(...nums.slice(i, i + k)));\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+  ],
+};
 
-const linkedList = stub("linked-list", "Linked List", [
-  "Fast-Slow Pointers",
-  "Cycle Detection",
-  "Reversal",
-  "Merge Lists",
-]);
+const firstNegativeInWindowProblem: Problem = {
+  id: "queue-deque-first-negative-in-window",
+  title: "First Negative Number in Every Window of Size K",
+  difficulty: "Medium",
+  description:
+    "Given an array nums and a window size k, return an array where entry i is the first negative number in " +
+    "the window of size k ending at index i, or 0 if that window has no negative number.",
+  fnName: "firstNegativeInWindow",
+  starterCode: "function firstNegativeInWindow(nums, k) {\n  // your code here\n}",
+  testCases: [
+    { input: [[12, -1, -7, 8, -15, 30, 16, 28], 3], expected: [-1, -1, -7, -15, -15, 0] },
+    { input: [[-8, 2, 3, -6, 10], 2], expected: [-8, 0, -6, -6] },
+    { input: [[5, -3, 5], 2], expected: [-3, -3] },
+    { input: [[1, 2, 3], 2], expected: [0, 0] },
+  ],
+  solution:
+    "function firstNegativeInWindow(nums, k) {\n" +
+    "  const dq = [];\n" +
+    "  const res = [];\n" +
+    "  for (let i = 0; i < nums.length; i++) {\n" +
+    "    if (nums[i] < 0) dq.push(i);\n" +
+    "    while (dq.length && dq[0] <= i - k) dq.shift();\n" +
+    "    if (i >= k - 1) res.push(dq.length ? nums[dq[0]] : 0);\n" +
+    "  }\n" +
+    "  return res;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Deque of negative-value indices",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(k)",
+      explanation:
+        "Only push indices whose value is negative onto the deque, in increasing order. Evict indices that " +
+        "fell out of the window from the front; whatever remains at the front is the earliest still-in-window " +
+        "negative, or the window has none if the deque is empty.",
+      code:
+        "function firstNegativeInWindow(nums, k) {\n" +
+        "  const dq = [];\n" +
+        "  const res = [];\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    if (nums[i] < 0) dq.push(i);\n" +
+        "    while (dq.length && dq[0] <= i - k) dq.shift();\n" +
+        "    if (i >= k - 1) res.push(dq.length ? nums[dq[0]] : 0);\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — scan each window",
+      timeComplexity: "O(n * k)",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "For every window, walk it left to right until a negative number turns up. Correct, but on a window " +
+        "with no negatives it re-walks the full k elements every time instead of remembering that from the " +
+        "previous slide.",
+      code:
+        "function firstNegativeInWindow(nums, k) {\n" +
+        "  const res = [];\n" +
+        "  for (let i = 0; i + k <= nums.length; i++) {\n" +
+        "    let found = 0;\n" +
+        "    for (let j = i; j < i + k; j++) { if (nums[j] < 0) { found = nums[j]; break; } }\n" +
+        "    res.push(found);\n" +
+        "  }\n" +
+        "  return res;\n" +
+        "}",
+    },
+  ],
+};
+
+const shortestSubarrayProblem: Problem = {
+  id: "queue-deque-shortest-subarray-at-least-k",
+  title: "Shortest Subarray with Sum at Least K",
+  difficulty: "Hard",
+  description:
+    "Given an integer array nums (which may contain negative numbers) and an integer k, return the length of " +
+    "the shortest contiguous subarray with a sum of at least k, or -1 if no such subarray exists.",
+  fnName: "shortestSubarray",
+  starterCode: "function shortestSubarray(nums, k) {\n  // your code here\n}",
+  testCases: [
+    { input: [[1], 1], expected: 1 },
+    { input: [[1, 2], 4], expected: -1 },
+    { input: [[2, -1, 2], 3], expected: 3 },
+    { input: [[84, -37, 32, 40, 95], 167], expected: 3 },
+    { input: [[-28, 81, -20, 28, -29], 89], expected: 3 },
+  ],
+  solution:
+    "function shortestSubarray(nums, k) {\n" +
+    "  const n = nums.length;\n" +
+    "  const prefix = new Array(n + 1).fill(0);\n" +
+    "  for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + nums[i];\n" +
+    "  const dq = [];\n" +
+    "  let best = Infinity;\n" +
+    "  for (let i = 0; i <= n; i++) {\n" +
+    "    while (dq.length && prefix[i] - prefix[dq[0]] >= k) {\n" +
+    "      best = Math.min(best, i - dq.shift());\n" +
+    "    }\n" +
+    "    while (dq.length && prefix[dq[dq.length - 1]] >= prefix[i]) dq.pop();\n" +
+    "    dq.push(i);\n" +
+    "  }\n" +
+    "  return best === Infinity ? -1 : best;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Prefix Sum + Monotonic Deque",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Because nums can hold negatives, prefix sums aren't monotonic, so a plain two-pointer window doesn't " +
+        "work. Instead, keep a deque of prefix-sum indices with increasing prefix value: whenever the current " +
+        "prefix minus the deque's front is >= k, that front index can never beat this match again, so pop and " +
+        "score it; whenever the current prefix is <= the deque's back, the back index is now strictly worse " +
+        "than the current one for every future query, so drop it too. Each index enters and leaves the deque " +
+        "at most once.",
+      code:
+        "function shortestSubarray(nums, k) {\n" +
+        "  const n = nums.length;\n" +
+        "  const prefix = new Array(n + 1).fill(0);\n" +
+        "  for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + nums[i];\n" +
+        "  const dq = [];\n" +
+        "  let best = Infinity;\n" +
+        "  for (let i = 0; i <= n; i++) {\n" +
+        "    while (dq.length && prefix[i] - prefix[dq[0]] >= k) {\n" +
+        "      best = Math.min(best, i - dq.shift());\n" +
+        "    }\n" +
+        "    while (dq.length && prefix[dq[dq.length - 1]] >= prefix[i]) dq.pop();\n" +
+        "    dq.push(i);\n" +
+        "  }\n" +
+        "  return best === Infinity ? -1 : best;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — every subarray",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "Try every start index and extend the end index, stopping the inner loop as soon as the running sum " +
+        "reaches k. Correct for any input, but doesn't reuse the deque's insight that some starting points can " +
+        "be eliminated outright.",
+      code:
+        "function shortestSubarray(nums, k) {\n" +
+        "  const n = nums.length;\n" +
+        "  let best = Infinity;\n" +
+        "  for (let i = 0; i < n; i++) {\n" +
+        "    let sum = 0;\n" +
+        "    for (let j = i; j < n; j++) {\n" +
+        "      sum += nums[j];\n" +
+        "      if (sum >= k) { best = Math.min(best, j - i + 1); break; }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return best === Infinity ? -1 : best;\n" +
+        "}",
+    },
+  ],
+};
+
+const designQueueProblem: Problem = {
+  id: "queue-deque-design-queue",
+  title: "Implement Queue using Two Stacks",
+  difficulty: "Easy",
+  description:
+    "Implement a FIFO queue using only two stacks, exercised via a sequence of operations. ops[i] is one of " +
+    "\"enqueue\", \"dequeue\", \"peek\", \"isEmpty\"; argsList[i] holds that operation's arguments (empty for " +
+    "dequeue/peek/isEmpty). enqueue returns null; dequeue/peek return -1 when the queue is empty.",
+  fnName: "queueOperations",
+  starterCode: "function queueOperations(ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        ["enqueue", "enqueue", "peek", "dequeue", "isEmpty", "enqueue", "dequeue", "dequeue", "isEmpty"],
+        [[1], [2], [], [], [], [3], [], [], []],
+      ],
+      expected: [null, null, 1, 1, false, null, 2, 3, true],
+    },
+    {
+      input: [["dequeue", "enqueue", "peek"], [[], [7], []]],
+      expected: [-1, null, 7],
+    },
+  ],
+  solution:
+    "function queueOperations(ops, argsList) {\n" +
+    "  const inStack = [], outStack = [];\n" +
+    "  const out = [];\n" +
+    "  function transfer() { while (inStack.length) outStack.push(inStack.pop()); }\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], a = argsList[i];\n" +
+    "    if (op === 'enqueue') { inStack.push(a[0]); out.push(null); }\n" +
+    "    else if (op === 'dequeue') { if (!outStack.length) transfer(); out.push(outStack.length ? outStack.pop() : -1); }\n" +
+    "    else if (op === 'peek') { if (!outStack.length) transfer(); out.push(outStack.length ? outStack[outStack.length - 1] : -1); }\n" +
+    "    else { out.push(inStack.length === 0 && outStack.length === 0); }\n" +
+    "  }\n" +
+    "  return out;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Two stacks, amortized O(1)",
+      timeComplexity: "O(1) amortized per operation",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Push new items onto an 'in' stack. When a dequeue/peek needs the oldest item and the 'out' stack is " +
+        "empty, dump the entire 'in' stack onto 'out' — this reverses it to FIFO order in one pass. Each " +
+        "element only ever gets moved from 'in' to 'out' once across its whole lifetime, so the total work " +
+        "stays linear even though a single dequeue can occasionally be O(n).",
+      code:
+        "function queueOperations(ops, argsList) {\n" +
+        "  const inStack = [], outStack = [];\n" +
+        "  const out = [];\n" +
+        "  function transfer() { while (inStack.length) outStack.push(inStack.pop()); }\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'enqueue') { inStack.push(a[0]); out.push(null); }\n" +
+        "    else if (op === 'dequeue') { if (!outStack.length) transfer(); out.push(outStack.length ? outStack.pop() : -1); }\n" +
+        "    else if (op === 'peek') { if (!outStack.length) transfer(); out.push(outStack.length ? outStack[outStack.length - 1] : -1); }\n" +
+        "    else { out.push(inStack.length === 0 && outStack.length === 0); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+    {
+      approach: "Brute force — array with shift()",
+      timeComplexity: "O(n) per dequeue (Array.shift is linear)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Use a single array, pushing to the end and calling shift() to dequeue from the front. Simple, but " +
+        "shift() re-indexes every remaining element, so it doesn't actually satisfy the 'stacks only, O(1) " +
+        "amortized' constraint the two-stack design is built around.",
+      code:
+        "function queueOperations(ops, argsList) {\n" +
+        "  const arr = [];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'enqueue') { arr.push(a[0]); out.push(null); }\n" +
+        "    else if (op === 'dequeue') { out.push(arr.length ? arr.shift() : -1); }\n" +
+        "    else if (op === 'peek') { out.push(arr.length ? arr[0] : -1); }\n" +
+        "    else { out.push(arr.length === 0); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+  ],
+};
+
+const queueDeque: Pattern = {
+  id: "queue-deque",
+  name: "Queue / Deque",
+  subpatterns: [
+    {
+      id: "queue-deque-sliding-window-maximum",
+      name: "Sliding Window Maximum",
+      explanation:
+        "Maintain a deque of indices with strictly decreasing values; the front is always the current window's " +
+        "maximum, and stale or dominated indices are evicted as the window slides.",
+      problems: [maxSlidingWindowProblem],
+    },
+    {
+      id: "queue-deque-first-negative-in-window",
+      name: "First Negative in Window",
+      explanation:
+        "A deque holding only the indices of negative numbers turns 'find the first negative in this window' " +
+        "into a front-of-deque read instead of a rescan.",
+      problems: [firstNegativeInWindowProblem],
+    },
+    {
+      id: "queue-deque-deque-optimization",
+      name: "Deque Optimization",
+      explanation:
+        "Some window/range problems (especially with negative values, where two-pointer sums break down) can " +
+        "still hit O(n) by keeping a monotonic deque of candidate indices and discarding ones that can " +
+        "provably never be optimal again.",
+      problems: [shortestSubarrayProblem],
+    },
+    {
+      id: "queue-deque-design-queue",
+      name: "Design Queue",
+      explanation:
+        "A FIFO queue can be built from two LIFO stacks: new items go on one stack, and reversing onto a second " +
+        "stack (only when it's empty) restores FIFO order with amortized O(1) cost per operation.",
+      problems: [designQueueProblem],
+    },
+  ],
+};
+
+const middleNodeProblem: Problem = {
+  id: "linked-list-middle-node",
+  title: "Middle of the Linked List",
+  difficulty: "Easy",
+  description:
+    "Given a singly linked list (represented here as an array of values), return the values from the middle " +
+    "node to the end. If there are two middle nodes, return starting from the second one.",
+  fnName: "middleNode",
+  starterCode: "function middleNode(arr) {\n  // your code here\n}",
+  testCases: [
+    { input: [[1, 2, 3, 4, 5]], expected: [3, 4, 5] },
+    { input: [[1, 2, 3, 4, 5, 6]], expected: [4, 5, 6] },
+    { input: [[1]], expected: [1] },
+    { input: [[1, 2]], expected: [2] },
+  ],
+  solution:
+    "function middleNode(arr) {\n" +
+    "  function buildList(a) {\n" +
+    "    let head = null, tail = null;\n" +
+    "    for (const v of a) {\n" +
+    "      const node = { val: v, next: null };\n" +
+    "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+    "    }\n" +
+    "    return head;\n" +
+    "  }\n" +
+    "  function toArray(h) {\n" +
+    "    const out = [];\n" +
+    "    let cur = h;\n" +
+    "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+    "    return out;\n" +
+    "  }\n" +
+    "  const head = buildList(arr);\n" +
+    "  let slow = head, fast = head;\n" +
+    "  while (fast && fast.next) { slow = slow.next; fast = fast.next.next; }\n" +
+    "  return toArray(slow);\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Fast-Slow Pointers",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "Advance a slow pointer one node at a time and a fast pointer two nodes at a time. When fast reaches " +
+        "the end, slow is exactly at the middle — one traversal, no need to know the length in advance.",
+      code:
+        "function middleNode(arr) {\n" +
+        "  function buildList(a) {\n" +
+        "    let head = null, tail = null;\n" +
+        "    for (const v of a) {\n" +
+        "      const node = { val: v, next: null };\n" +
+        "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+        "    }\n" +
+        "    return head;\n" +
+        "  }\n" +
+        "  function toArray(h) {\n" +
+        "    const out = [];\n" +
+        "    let cur = h;\n" +
+        "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+        "    return out;\n" +
+        "  }\n" +
+        "  const head = buildList(arr);\n" +
+        "  let slow = head, fast = head;\n" +
+        "  while (fast && fast.next) { slow = slow.next; fast = fast.next.next; }\n" +
+        "  return toArray(slow);\n" +
+        "}",
+    },
+    {
+      approach: "Two-pass — count then walk",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "First pass collects every node into an array (or just counts the length), then a second step jumps " +
+        "straight to the middle index. Needs the whole list materialized (or a length precomputed) before it " +
+        "can locate the middle, where fast-slow finds it in a single pass over the live list.",
+      code:
+        "function middleNode(arr) {\n" +
+        "  function buildList(a) {\n" +
+        "    let head = null, tail = null;\n" +
+        "    for (const v of a) {\n" +
+        "      const node = { val: v, next: null };\n" +
+        "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+        "    }\n" +
+        "    return head;\n" +
+        "  }\n" +
+        "  function toArray(h) {\n" +
+        "    const out = [];\n" +
+        "    let cur = h;\n" +
+        "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+        "    return out;\n" +
+        "  }\n" +
+        "  const head = buildList(arr);\n" +
+        "  const nodes = [];\n" +
+        "  let cur = head;\n" +
+        "  while (cur) { nodes.push(cur); cur = cur.next; }\n" +
+        "  return toArray(nodes[Math.floor(nodes.length / 2)]);\n" +
+        "}",
+    },
+  ],
+};
+
+const hasCycleProblem: Problem = {
+  id: "linked-list-has-cycle",
+  title: "Linked List Cycle Detection",
+  difficulty: "Easy",
+  description:
+    "Given a linked list built from an array of values where the last node's next pointer connects back to " +
+    "index pos (or pos = -1 for no cycle), return true if the list has a cycle.",
+  fnName: "hasCycle",
+  starterCode: "function hasCycle(arr, pos) {\n  // your code here\n}",
+  testCases: [
+    { input: [[3, 2, 0, -4], 1], expected: true },
+    { input: [[1, 2], 0], expected: true },
+    { input: [[1], -1], expected: false },
+    { input: [[1, 2, 3], -1], expected: false },
+  ],
+  solution:
+    "function hasCycle(arr, pos) {\n" +
+    "  const nodes = arr.map((v) => ({ val: v, next: null }));\n" +
+    "  for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];\n" +
+    "  if (pos >= 0 && nodes.length) nodes[nodes.length - 1].next = nodes[pos];\n" +
+    "  let slow = nodes[0], fast = nodes[0];\n" +
+    "  while (fast && fast.next) {\n" +
+    "    slow = slow.next; fast = fast.next.next;\n" +
+    "    if (slow === fast) return true;\n" +
+    "  }\n" +
+    "  return false;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Floyd's Fast-Slow Pointers",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "If a cycle exists, a pointer moving 2 steps at a time is guaranteed to lap a pointer moving 1 step at " +
+        "a time and land on the same node. No extra memory — just two pointers racing around the list.",
+      code:
+        "function hasCycle(arr, pos) {\n" +
+        "  const nodes = arr.map((v) => ({ val: v, next: null }));\n" +
+        "  for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];\n" +
+        "  if (pos >= 0 && nodes.length) nodes[nodes.length - 1].next = nodes[pos];\n" +
+        "  let slow = nodes[0], fast = nodes[0];\n" +
+        "  while (fast && fast.next) {\n" +
+        "    slow = slow.next; fast = fast.next.next;\n" +
+        "    if (slow === fast) return true;\n" +
+        "  }\n" +
+        "  return false;\n" +
+        "}",
+    },
+    {
+      approach: "Hash Set of visited nodes",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Walk the list, remembering every node visited. A cycle exists exactly when the walk revisits a node " +
+        "already in the set. Just as fast, but trades Floyd's constant space for a full extra set of node " +
+        "references.",
+      code:
+        "function hasCycle(arr, pos) {\n" +
+        "  const nodes = arr.map((v) => ({ val: v, next: null }));\n" +
+        "  for (let i = 0; i < nodes.length - 1; i++) nodes[i].next = nodes[i + 1];\n" +
+        "  if (pos >= 0 && nodes.length) nodes[nodes.length - 1].next = nodes[pos];\n" +
+        "  const seen = new Set();\n" +
+        "  let cur = nodes[0];\n" +
+        "  while (cur) { if (seen.has(cur)) return true; seen.add(cur); cur = cur.next; }\n" +
+        "  return false;\n" +
+        "}",
+    },
+  ],
+};
+
+const reverseListProblem: Problem = {
+  id: "linked-list-reverse-list",
+  title: "Reverse Linked List",
+  difficulty: "Easy",
+  description: "Given the values of a singly linked list as an array, return the values of the reversed list.",
+  fnName: "reverseList",
+  starterCode: "function reverseList(arr) {\n  // your code here\n}",
+  testCases: [
+    { input: [[1, 2, 3, 4, 5]], expected: [5, 4, 3, 2, 1] },
+    { input: [[1, 2]], expected: [2, 1] },
+    { input: [[1]], expected: [1] },
+    { input: [[]], expected: [] },
+  ],
+  solution:
+    "function reverseList(arr) {\n" +
+    "  function buildList(a) {\n" +
+    "    let head = null, tail = null;\n" +
+    "    for (const v of a) {\n" +
+    "      const node = { val: v, next: null };\n" +
+    "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+    "    }\n" +
+    "    return head;\n" +
+    "  }\n" +
+    "  function toArray(h) {\n" +
+    "    const out = [];\n" +
+    "    let cur = h;\n" +
+    "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+    "    return out;\n" +
+    "  }\n" +
+    "  let cur = buildList(arr);\n" +
+    "  let prev = null;\n" +
+    "  while (cur) { const next = cur.next; cur.next = prev; prev = cur; cur = next; }\n" +
+    "  return toArray(prev);\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Iterative pointer rewiring",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "Walk the list once, and at each node flip its next pointer to point backward at the previous node " +
+        "instead of forward. Three running pointers (prev, cur, next) are all the extra state needed.",
+      code:
+        "function reverseList(arr) {\n" +
+        "  function buildList(a) {\n" +
+        "    let head = null, tail = null;\n" +
+        "    for (const v of a) {\n" +
+        "      const node = { val: v, next: null };\n" +
+        "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+        "    }\n" +
+        "    return head;\n" +
+        "  }\n" +
+        "  function toArray(h) {\n" +
+        "    const out = [];\n" +
+        "    let cur = h;\n" +
+        "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+        "    return out;\n" +
+        "  }\n" +
+        "  let cur = buildList(arr);\n" +
+        "  let prev = null;\n" +
+        "  while (cur) { const next = cur.next; cur.next = prev; prev = cur; cur = next; }\n" +
+        "  return toArray(prev);\n" +
+        "}",
+    },
+    {
+      approach: "Recursive reversal",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) — recursion stack, one frame per node",
+      explanation:
+        "Recurse to the end of the list first, then, unwinding, make each node's next node point back at it. " +
+        "Same pointer-flipping idea as the iterative version, but the call stack does the bookkeeping instead " +
+        "of explicit prev/cur/next variables.",
+      code:
+        "function reverseList(arr) {\n" +
+        "  function buildList(a) {\n" +
+        "    let head = null, tail = null;\n" +
+        "    for (const v of a) {\n" +
+        "      const node = { val: v, next: null };\n" +
+        "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+        "    }\n" +
+        "    return head;\n" +
+        "  }\n" +
+        "  function toArray(h) {\n" +
+        "    const out = [];\n" +
+        "    let cur = h;\n" +
+        "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+        "    return out;\n" +
+        "  }\n" +
+        "  function helper(node) {\n" +
+        "    if (!node || !node.next) return node;\n" +
+        "    const newHead = helper(node.next);\n" +
+        "    node.next.next = node;\n" +
+        "    node.next = null;\n" +
+        "    return newHead;\n" +
+        "  }\n" +
+        "  return toArray(helper(buildList(arr)));\n" +
+        "}",
+    },
+  ],
+};
+
+const mergeTwoListsProblem: Problem = {
+  id: "linked-list-merge-two-sorted-lists",
+  title: "Merge Two Sorted Lists",
+  difficulty: "Easy",
+  description:
+    "Given two sorted linked lists (as arrays of values), merge them into one sorted list and return its " +
+    "values as an array.",
+  fnName: "mergeTwoLists",
+  starterCode: "function mergeTwoLists(a, b) {\n  // your code here\n}",
+  testCases: [
+    { input: [[1, 2, 4], [1, 3, 4]], expected: [1, 1, 2, 3, 4, 4] },
+    { input: [[], []], expected: [] },
+    { input: [[], [0]], expected: [0] },
+    { input: [[5], [1, 2, 4]], expected: [1, 2, 4, 5] },
+  ],
+  solution:
+    "function mergeTwoLists(a, b) {\n" +
+    "  function buildList(arr) {\n" +
+    "    let head = null, tail = null;\n" +
+    "    for (const v of arr) {\n" +
+    "      const node = { val: v, next: null };\n" +
+    "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+    "    }\n" +
+    "    return head;\n" +
+    "  }\n" +
+    "  function toArray(h) {\n" +
+    "    const out = [];\n" +
+    "    let cur = h;\n" +
+    "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+    "    return out;\n" +
+    "  }\n" +
+    "  let p1 = buildList(a), p2 = buildList(b);\n" +
+    "  const dummy = { val: 0, next: null };\n" +
+    "  let tail = dummy;\n" +
+    "  while (p1 && p2) {\n" +
+    "    if (p1.val <= p2.val) { tail.next = p1; p1 = p1.next; } else { tail.next = p2; p2 = p2.next; }\n" +
+    "    tail = tail.next;\n" +
+    "  }\n" +
+    "  tail.next = p1 || p2;\n" +
+    "  return toArray(dummy.next);\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Two-Pointer Merge",
+      timeComplexity: "O(n + m)",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "Walk both lists simultaneously, always splicing the smaller current node onto the result and " +
+        "advancing that list's pointer. A dummy head node avoids special-casing the first splice. Once one " +
+        "list is exhausted, the remainder of the other is already sorted, so it's spliced on directly.",
+      code:
+        "function mergeTwoLists(a, b) {\n" +
+        "  function buildList(arr) {\n" +
+        "    let head = null, tail = null;\n" +
+        "    for (const v of arr) {\n" +
+        "      const node = { val: v, next: null };\n" +
+        "      if (!head) head = tail = node; else { tail.next = node; tail = node; }\n" +
+        "    }\n" +
+        "    return head;\n" +
+        "  }\n" +
+        "  function toArray(h) {\n" +
+        "    const out = [];\n" +
+        "    let cur = h;\n" +
+        "    while (cur) { out.push(cur.val); cur = cur.next; }\n" +
+        "    return out;\n" +
+        "  }\n" +
+        "  let p1 = buildList(a), p2 = buildList(b);\n" +
+        "  const dummy = { val: 0, next: null };\n" +
+        "  let tail = dummy;\n" +
+        "  while (p1 && p2) {\n" +
+        "    if (p1.val <= p2.val) { tail.next = p1; p1 = p1.next; } else { tail.next = p2; p2 = p2.next; }\n" +
+        "    tail = tail.next;\n" +
+        "  }\n" +
+        "  tail.next = p1 || p2;\n" +
+        "  return toArray(dummy.next);\n" +
+        "}",
+    },
+    {
+      approach: "Concatenate + sort",
+      timeComplexity: "O((n + m) log(n + m))",
+      spaceComplexity: "O(n + m)",
+      explanation:
+        "Ignore that both inputs are already sorted — just concatenate them into one array and sort from " +
+        "scratch. Correct, but throws away the sortedness the two-pointer merge exploits to do the same job " +
+        "in linear time.",
+      code:
+        "function mergeTwoLists(a, b) {\n" +
+        "  return [...a, ...b].sort((x, y) => x - y);\n" +
+        "}",
+    },
+  ],
+};
+
+const linkedList: Pattern = {
+  id: "linked-list",
+  name: "Linked List",
+  subpatterns: [
+    {
+      id: "linked-list-fast-slow-pointers",
+      name: "Fast-Slow Pointers",
+      explanation:
+        "Two pointers advance through the list at different speeds (typically 1 and 2 steps). Where they meet, " +
+        "or whether the fast one reaches the end first, answers questions like 'where's the middle' or " +
+        "'is there a cycle' without ever knowing the list's length up front.",
+      problems: [middleNodeProblem],
+    },
+    {
+      id: "linked-list-cycle-detection",
+      name: "Cycle Detection",
+      explanation:
+        "A special case of fast-slow pointers: if the fast pointer ever catches up to the slow one, the list " +
+        "loops back on itself. If fast reaches a null next pointer instead, there's no cycle.",
+      problems: [hasCycleProblem],
+    },
+    {
+      id: "linked-list-reversal",
+      name: "Reversal",
+      explanation:
+        "Flip every node's next pointer to point at the previous node instead of the following one, tracking " +
+        "prev/cur/next as you go (or achieving the same flip via recursion, unwinding from the tail).",
+      problems: [reverseListProblem],
+    },
+    {
+      id: "linked-list-merge-lists",
+      name: "Merge Lists",
+      explanation:
+        "Walk two already-sorted lists together with one pointer each, always splicing the smaller current " +
+        "node onto the result — no need to sort anything, since the inputs' order is never violated.",
+      problems: [mergeTwoListsProblem],
+    },
+  ],
+};
 
 const trees = stub("trees", "Trees", ["Traversal", "BST", "Lowest Common Ancestor", "Construction"]);
 

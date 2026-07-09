@@ -3,8 +3,10 @@
 // independent of the UI, plus structural checks on the data itself:
 //   - `solution` must equal `solutions[0].code` (UI shows solutions[] when present,
 //     but older tooling reads `solution` directly — they must never diverge)
-//   - no two `solutions[]` entries on the same problem may share a `timeComplexity`
-//     string (the whole point of the array is genuinely different approaches)
+//   - no two `solutions[]` entries on the same problem may share BOTH `timeComplexity`
+//     and `spaceComplexity` (the whole point of the array is genuinely different
+//     approaches — a same-time/different-space pair, e.g. Floyd's vs. a hash set for
+//     cycle detection, is a real distinction and must not be flagged)
 //   - a per-subpattern problem-count report, so curriculum coverage gaps are visible
 //     at a glance instead of requiring a separate inventory script
 // Run with:
@@ -35,14 +37,16 @@ for (const pattern of PATTERNS) {
         }
         const seen = new Map();
         for (const s of problem.solutions) {
-          if (seen.has(s.timeComplexity)) {
+          const key = `${s.timeComplexity}||${s.spaceComplexity}`;
+          if (seen.has(key)) {
             duplicateComplexity.push({
               problem: problem.id,
               timeComplexity: s.timeComplexity,
-              approaches: [seen.get(s.timeComplexity), s.approach],
+              spaceComplexity: s.spaceComplexity,
+              approaches: [seen.get(key), s.approach],
             });
           } else {
-            seen.set(s.timeComplexity, s.approach);
+            seen.set(key, s.approach);
           }
         }
       }
