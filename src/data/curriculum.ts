@@ -4349,7 +4349,350 @@ const recursion: Pattern = {
   ],
 };
 
-const heap = stub("heap", "Heap", ["Priority Queue", "Top-K", "Heapify/Heap Sort"]);
+const priorityQueueProblem: Problem = {
+  id: "heap-priority-queue-design",
+  title: "Design a Priority Queue (Min)",
+  difficulty: "Medium",
+  description:
+    "Design a min-priority-queue supporting insert, extractMin, and peek, exercised via a sequence of " +
+    "operations. ops[i] is one of \"insert\", \"extractMin\", \"peek\"; argsList[i] holds that operation's " +
+    "arguments (empty except for insert). insert returns null; extractMin/peek return -1 when the queue is empty.",
+  fnName: "priorityQueueOperations",
+  starterCode: "function priorityQueueOperations(ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        ["insert", "insert", "insert", "peek", "extractMin", "extractMin", "peek", "insert", "extractMin", "extractMin", "extractMin"],
+        [[5], [2], [8], [], [], [], [], [1], [], [], []],
+      ],
+      expected: [null, null, null, 2, 2, 5, 8, null, 1, 8, -1],
+    },
+    {
+      input: [["extractMin", "peek", "insert", "peek"], [[], [], [4], []]],
+      expected: [-1, -1, null, 4],
+    },
+  ],
+  solution:
+    "function priorityQueueOperations(ops, argsList) {\n" +
+    "  const heap = [];\n" +
+    "  function siftUp(i) {\n" +
+    "    while (i > 0) {\n" +
+    "      const parent = (i - 1) >> 1;\n" +
+    "      if (heap[parent] <= heap[i]) break;\n" +
+    "      [heap[parent], heap[i]] = [heap[i], heap[parent]];\n" +
+    "      i = parent;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  function siftDown(i) {\n" +
+    "    const n = heap.length;\n" +
+    "    while (true) {\n" +
+    "      let smallest = i;\n" +
+    "      const l = 2 * i + 1, r = 2 * i + 2;\n" +
+    "      if (l < n && heap[l] < heap[smallest]) smallest = l;\n" +
+    "      if (r < n && heap[r] < heap[smallest]) smallest = r;\n" +
+    "      if (smallest === i) break;\n" +
+    "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]];\n" +
+    "      i = smallest;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  const out = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], a = argsList[i];\n" +
+    "    if (op === 'insert') {\n" +
+    "      heap.push(a[0]);\n" +
+    "      siftUp(heap.length - 1);\n" +
+    "      out.push(null);\n" +
+    "    } else if (op === 'extractMin') {\n" +
+    "      if (!heap.length) { out.push(-1); continue; }\n" +
+    "      const min = heap[0];\n" +
+    "      const last = heap.pop();\n" +
+    "      if (heap.length) { heap[0] = last; siftDown(0); }\n" +
+    "      out.push(min);\n" +
+    "    } else if (op === 'peek') {\n" +
+    "      out.push(heap.length ? heap[0] : -1);\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return out;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Binary heap (array-backed)",
+      timeComplexity: "O(log n) insert/extractMin, O(1) peek",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Store the heap as an array where each node's children live at 2i+1 and 2i+2. Insert appends then " +
+        "sifts up; extractMin swaps the root with the last element, pops, then sifts the new root down.",
+      code:
+        "function priorityQueueOperations(ops, argsList) {\n" +
+        "  const heap = [];\n" +
+        "  function siftUp(i) {\n" +
+        "    while (i > 0) {\n" +
+        "      const parent = (i - 1) >> 1;\n" +
+        "      if (heap[parent] <= heap[i]) break;\n" +
+        "      [heap[parent], heap[i]] = [heap[i], heap[parent]];\n" +
+        "      i = parent;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  function siftDown(i) {\n" +
+        "    const n = heap.length;\n" +
+        "    while (true) {\n" +
+        "      let smallest = i;\n" +
+        "      const l = 2 * i + 1, r = 2 * i + 2;\n" +
+        "      if (l < n && heap[l] < heap[smallest]) smallest = l;\n" +
+        "      if (r < n && heap[r] < heap[smallest]) smallest = r;\n" +
+        "      if (smallest === i) break;\n" +
+        "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]];\n" +
+        "      i = smallest;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'insert') {\n" +
+        "      heap.push(a[0]);\n" +
+        "      siftUp(heap.length - 1);\n" +
+        "      out.push(null);\n" +
+        "    } else if (op === 'extractMin') {\n" +
+        "      if (!heap.length) { out.push(-1); continue; }\n" +
+        "      const min = heap[0];\n" +
+        "      const last = heap.pop();\n" +
+        "      if (heap.length) { heap[0] = last; siftDown(0); }\n" +
+        "      out.push(min);\n" +
+        "    } else if (op === 'peek') {\n" +
+        "      out.push(heap.length ? heap[0] : -1);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+    {
+      approach: "Unsorted array (brute force)",
+      timeComplexity: "O(1) insert, O(n) extractMin/peek",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Just append on insert — no ordering maintained. extractMin and peek have to linearly rescan the " +
+        "whole array every time to find the current minimum, since nothing is kept sorted.",
+      code:
+        "function priorityQueueOperations(ops, argsList) {\n" +
+        "  const arr = [];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'insert') { arr.push(a[0]); out.push(null); }\n" +
+        "    else if (op === 'extractMin') {\n" +
+        "      if (!arr.length) { out.push(-1); continue; }\n" +
+        "      let minIdx = 0;\n" +
+        "      for (let j = 1; j < arr.length; j++) if (arr[j] < arr[minIdx]) minIdx = j;\n" +
+        "      out.push(arr.splice(minIdx, 1)[0]);\n" +
+        "    } else if (op === 'peek') {\n" +
+        "      if (!arr.length) { out.push(-1); continue; }\n" +
+        "      out.push(Math.min(...arr));\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+  ],
+};
+
+const kthLargestProblem: Problem = {
+  id: "heap-kth-largest",
+  title: "Kth Largest Element in an Array",
+  difficulty: "Medium",
+  description:
+    "Given an unsorted array of integers and an integer k, return the k-th largest element (not the k-th " +
+    "distinct element — duplicates count separately).",
+  fnName: "findKthLargest",
+  starterCode: "function findKthLargest(nums, k) {\n  \n}",
+  testCases: [
+    { input: [[3, 2, 1, 5, 6, 4], 2], expected: 5 },
+    { input: [[3, 2, 3, 1, 2, 4, 5, 5, 6], 4], expected: 4 },
+    { input: [[1], 1], expected: 1 },
+    { input: [[7, 6, 5, 4, 3, 2, 1], 3], expected: 5 },
+  ],
+  solution:
+    "function findKthLargest(nums, k) {\n" +
+    "  const heap = [];\n" +
+    "  function siftUp(i) {\n" +
+    "    while (i > 0) { const p = (i - 1) >> 1; if (heap[p] <= heap[i]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }\n" +
+    "  }\n" +
+    "  function siftDown(i) {\n" +
+    "    const n = heap.length;\n" +
+    "    while (true) {\n" +
+    "      let smallest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+    "      if (l < n && heap[l] < heap[smallest]) smallest = l;\n" +
+    "      if (r < n && heap[r] < heap[smallest]) smallest = r;\n" +
+    "      if (smallest === i) break;\n" +
+    "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]]; i = smallest;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  for (const num of nums) {\n" +
+    "    heap.push(num); siftUp(heap.length - 1);\n" +
+    "    if (heap.length > k) { heap[0] = heap.pop(); siftDown(0); }\n" +
+    "  }\n" +
+    "  return heap[0];\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Min-heap of size k",
+      timeComplexity: "O(n log k)",
+      spaceComplexity: "O(k)",
+      explanation:
+        "Keep a min-heap capped at size k. Push every number; whenever the heap grows past k, pop the " +
+        "smallest. What survives is exactly the k largest values, and the heap's root is the smallest of those.",
+      code:
+        "function findKthLargest(nums, k) {\n" +
+        "  const heap = [];\n" +
+        "  function siftUp(i) {\n" +
+        "    while (i > 0) { const p = (i - 1) >> 1; if (heap[p] <= heap[i]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }\n" +
+        "  }\n" +
+        "  function siftDown(i) {\n" +
+        "    const n = heap.length;\n" +
+        "    while (true) {\n" +
+        "      let smallest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+        "      if (l < n && heap[l] < heap[smallest]) smallest = l;\n" +
+        "      if (r < n && heap[r] < heap[smallest]) smallest = r;\n" +
+        "      if (smallest === i) break;\n" +
+        "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]]; i = smallest;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  for (const num of nums) {\n" +
+        "    heap.push(num); siftUp(heap.length - 1);\n" +
+        "    if (heap.length > k) { heap[0] = heap.pop(); siftDown(0); }\n" +
+        "  }\n" +
+        "  return heap[0];\n" +
+        "}",
+    },
+    {
+      approach: "Full sort (brute force)",
+      timeComplexity: "O(n log n)",
+      spaceComplexity: "O(n)",
+      explanation: "Sort a copy of the array descending and read off index k-1. Simple, but does far more work than needed when k is small.",
+      code:
+        "function findKthLargest(nums, k) {\n" +
+        "  const sorted = [...nums].sort((a, b) => b - a);\n" +
+        "  return sorted[k - 1];\n" +
+        "}",
+    },
+  ],
+};
+
+const heapSortProblem: Problem = {
+  id: "heap-heap-sort",
+  title: "Sort an Array (Heap Sort)",
+  difficulty: "Medium",
+  description:
+    "Given an array of integers, return it sorted in ascending order using heap sort: heapify the array into " +
+    "a max-heap, then repeatedly swap the root (the current maximum) to the end and shrink the heap.",
+  fnName: "heapSortArray",
+  starterCode: "function heapSortArray(nums) {\n  \n}",
+  testCases: [
+    { input: [[5, 2, 4, 1, 3]], expected: [1, 2, 3, 4, 5] },
+    { input: [[]], expected: [] },
+    { input: [[1]], expected: [1] },
+    { input: [[3, 3, 1, 2]], expected: [1, 2, 3, 3] },
+    { input: [[-5, 0, 5, -3]], expected: [-5, -3, 0, 5] },
+  ],
+  solution:
+    "function heapSortArray(nums) {\n" +
+    "  const arr = nums.slice();\n" +
+    "  const n = arr.length;\n" +
+    "  function siftDown(i, size) {\n" +
+    "    while (true) {\n" +
+    "      let largest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+    "      if (l < size && arr[l] > arr[largest]) largest = l;\n" +
+    "      if (r < size && arr[r] > arr[largest]) largest = r;\n" +
+    "      if (largest === i) break;\n" +
+    "      [arr[largest], arr[i]] = [arr[i], arr[largest]]; i = largest;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(i, n);\n" +
+    "  for (let end = n - 1; end > 0; end--) {\n" +
+    "    [arr[0], arr[end]] = [arr[end], arr[0]];\n" +
+    "    siftDown(0, end);\n" +
+    "  }\n" +
+    "  return arr;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Heap sort (heapify + repeated extraction)",
+      timeComplexity: "O(n log n)",
+      spaceComplexity: "O(1) extra — sorts in place aside from the initial copy",
+      explanation:
+        "Heapify the whole array into a max-heap in O(n), then repeatedly swap the root (the max of the " +
+        "remaining unsorted region) to the end of that region and sift the new root down.",
+      code:
+        "function heapSortArray(nums) {\n" +
+        "  const arr = nums.slice();\n" +
+        "  const n = arr.length;\n" +
+        "  function siftDown(i, size) {\n" +
+        "    while (true) {\n" +
+        "      let largest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+        "      if (l < size && arr[l] > arr[largest]) largest = l;\n" +
+        "      if (r < size && arr[r] > arr[largest]) largest = r;\n" +
+        "      if (largest === i) break;\n" +
+        "      [arr[largest], arr[i]] = [arr[i], arr[largest]]; i = largest;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  for (let i = Math.floor(n / 2) - 1; i >= 0; i--) siftDown(i, n);\n" +
+        "  for (let end = n - 1; end > 0; end--) {\n" +
+        "    [arr[0], arr[end]] = [arr[end], arr[0]];\n" +
+        "    siftDown(0, end);\n" +
+        "  }\n" +
+        "  return arr;\n" +
+        "}",
+    },
+    {
+      approach: "Selection sort (brute force)",
+      timeComplexity: "O(n²)",
+      spaceComplexity: "O(1) extra — sorts in place aside from the initial copy",
+      explanation:
+        "Repeatedly scan the unsorted remainder for its minimum and swap it into place. No heap structure — " +
+        "just a plain linear scan per position.",
+      code:
+        "function heapSortArray(nums) {\n" +
+        "  const arr = nums.slice();\n" +
+        "  for (let i = 0; i < arr.length; i++) {\n" +
+        "    let minIdx = i;\n" +
+        "    for (let j = i + 1; j < arr.length; j++) if (arr[j] < arr[minIdx]) minIdx = j;\n" +
+        "    [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];\n" +
+        "  }\n" +
+        "  return arr;\n" +
+        "}",
+    },
+  ],
+};
+
+const heap: Pattern = {
+  id: "heap",
+  name: "Heap",
+  subpatterns: [
+    {
+      id: "heap-priority-queue",
+      name: "Priority Queue",
+      explanation:
+        "A heap is the classic backing structure for a priority queue: the highest (or lowest) priority " +
+        "item always sits at the root, reachable in O(1), while insert and remove stay logarithmic.",
+      problems: [priorityQueueProblem],
+    },
+    {
+      id: "heap-top-k",
+      name: "Top-K",
+      explanation:
+        "To find the k largest (or smallest) items among n without sorting everything, maintain a heap of " +
+        "size k — it tracks exactly the elements that currently qualify, discarding the rest as it goes.",
+      problems: [kthLargestProblem],
+    },
+    {
+      id: "heap-heapify-heap-sort",
+      name: "Heapify/Heap Sort",
+      explanation:
+        "Heapify turns an arbitrary array into heap order in linear time by sifting down from the last " +
+        "non-leaf node backward. Heap sort reuses that structure to sort in place in O(n log n).",
+      problems: [heapSortProblem],
+    },
+  ],
+};
 
 const graphs = stub("graphs", "Graphs", ["BFS", "DFS", "Dijkstra", "Topological Sort"]);
 
