@@ -6300,7 +6300,329 @@ const bitManipulation: Pattern = {
   ],
 };
 
-const advanced = stub("advanced", "Advanced", ["Two Pointers", "Meet in the Middle", "Sweep Line"]);
+const threeSumProblem: Problem = {
+  id: "advanced-three-sum",
+  title: "3Sum",
+  difficulty: "Medium",
+  description:
+    "Given an array of integers, return all unique triplets [a, b, c] such that a + b + c === 0. The order " +
+    "of triplets and of values within a triplet doesn't matter.",
+  fnName: "threeSum",
+  starterCode: "function threeSum(nums) {\n  \n}",
+  testCases: [
+    { input: [[-1, 0, 1, 2, -1, -4]], expected: [[-1, -1, 2], [-1, 0, 1]] },
+    { input: [[0, 1, 1]], expected: [] },
+    { input: [[0, 0, 0]], expected: [[0, 0, 0]] },
+    { input: [[]], expected: [] },
+    { input: [[-2, 0, 1, 1, 2]], expected: [[-2, 0, 2], [-2, 1, 1]] },
+  ],
+  normalize: (x) =>
+    Array.isArray(x)
+      ? x
+          .map((t) => (Array.isArray(t) ? [...t].sort((p, q) => p - q) : t))
+          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+      : x,
+  solution:
+    "function threeSum(nums) {\n" +
+    "  const sorted = [...nums].sort((a, b) => a - b);\n" +
+    "  const result = [];\n" +
+    "  for (let i = 0; i < sorted.length - 2; i++) {\n" +
+    "    if (i > 0 && sorted[i] === sorted[i - 1]) continue;\n" +
+    "    let lo = i + 1, hi = sorted.length - 1;\n" +
+    "    while (lo < hi) {\n" +
+    "      const sum = sorted[i] + sorted[lo] + sorted[hi];\n" +
+    "      if (sum === 0) {\n" +
+    "        result.push([sorted[i], sorted[lo], sorted[hi]]);\n" +
+    "        while (lo < hi && sorted[lo] === sorted[lo + 1]) lo++;\n" +
+    "        while (lo < hi && sorted[hi] === sorted[hi - 1]) hi--;\n" +
+    "        lo++; hi--;\n" +
+    "      } else if (sum < 0) lo++;\n" +
+    "      else hi--;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return result;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Sort + two pointers per anchor",
+      timeComplexity: "O(n²)",
+      spaceComplexity: "O(n) for the sorted copy (excluding the output)",
+      explanation:
+        "Sort once, then fix each element as an anchor and use two pointers closing in from both ends of the " +
+        "rest of the array to find pairs that complete the sum to zero — sorting also makes skipping " +
+        "duplicate anchors and duplicate pairs a simple adjacent-element check.",
+      code:
+        "function threeSum(nums) {\n" +
+        "  const sorted = [...nums].sort((a, b) => a - b);\n" +
+        "  const result = [];\n" +
+        "  for (let i = 0; i < sorted.length - 2; i++) {\n" +
+        "    if (i > 0 && sorted[i] === sorted[i - 1]) continue;\n" +
+        "    let lo = i + 1, hi = sorted.length - 1;\n" +
+        "    while (lo < hi) {\n" +
+        "      const sum = sorted[i] + sorted[lo] + sorted[hi];\n" +
+        "      if (sum === 0) {\n" +
+        "        result.push([sorted[i], sorted[lo], sorted[hi]]);\n" +
+        "        while (lo < hi && sorted[lo] === sorted[lo + 1]) lo++;\n" +
+        "        while (lo < hi && sorted[hi] === sorted[hi - 1]) hi--;\n" +
+        "        lo++; hi--;\n" +
+        "      } else if (sum < 0) lo++;\n" +
+        "      else hi--;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force triple loop",
+      timeComplexity: "O(n³)",
+      spaceComplexity: "O(n) for the dedup set (excluding the output)",
+      explanation:
+        "Try every triple of indices directly and keep the ones that sum to zero, deduplicating by " +
+        "stringifying a sorted copy of each match. Straightforward, but checking every combination is an " +
+        "order of magnitude slower than pruning with sorted two pointers.",
+      code:
+        "function threeSum(nums) {\n" +
+        "  const n = nums.length;\n" +
+        "  const seen = new Set();\n" +
+        "  const result = [];\n" +
+        "  for (let i = 0; i < n; i++) {\n" +
+        "    for (let j = i + 1; j < n; j++) {\n" +
+        "      for (let k = j + 1; k < n; k++) {\n" +
+        "        if (nums[i] + nums[j] + nums[k] === 0) {\n" +
+        "          const triplet = [nums[i], nums[j], nums[k]].sort((a, b) => a - b);\n" +
+        "          const key = triplet.join(',');\n" +
+        "          if (!seen.has(key)) { seen.add(key); result.push(triplet); }\n" +
+        "        }\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+  ],
+};
+
+const subsetSumExistsProblem: Problem = {
+  id: "advanced-subset-sum-meet-in-the-middle",
+  title: "Subset Sum Exists",
+  difficulty: "Hard",
+  description:
+    "Given an array of integers and a target, return whether any subset of the array sums exactly to the " +
+    "target.",
+  fnName: "subsetSumExists",
+  starterCode: "function subsetSumExists(nums, target) {\n  \n}",
+  testCases: [
+    { input: [[3, 34, 4, 12, 5, 2], 9], expected: true },
+    { input: [[3, 34, 4, 12, 5, 2], 30], expected: false },
+    { input: [[], 0], expected: true },
+    { input: [[5], 5], expected: true },
+    { input: [[1, 2, 3, 4, 5, 6, 7, 8], 100], expected: false },
+  ],
+  solution:
+    "function subsetSumExists(nums, target) {\n" +
+    "  const n = nums.length;\n" +
+    "  const mid = Math.floor(n / 2);\n" +
+    "  const left = nums.slice(0, mid);\n" +
+    "  const right = nums.slice(mid);\n" +
+    "  function allSums(arr) {\n" +
+    "    const sums = [0];\n" +
+    "    for (const x of arr) {\n" +
+    "      const len = sums.length;\n" +
+    "      for (let i = 0; i < len; i++) sums.push(sums[i] + x);\n" +
+    "    }\n" +
+    "    return sums;\n" +
+    "  }\n" +
+    "  const leftSums = allSums(left);\n" +
+    "  const rightSums = allSums(right).sort((a, b) => a - b);\n" +
+    "  for (const ls of leftSums) {\n" +
+    "    const need = target - ls;\n" +
+    "    let lo = 0, hi = rightSums.length - 1;\n" +
+    "    while (lo <= hi) {\n" +
+    "      const midI = (lo + hi) >> 1;\n" +
+    "      if (rightSums[midI] === need) return true;\n" +
+    "      else if (rightSums[midI] < need) lo = midI + 1;\n" +
+    "      else hi = midI - 1;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return false;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Meet in the middle",
+      timeComplexity: "O(2^(n/2) log(2^(n/2))) — each half's 2^(n/2) sums, then a sort and binary search",
+      spaceComplexity: "O(2^(n/2)) to store each half's subset sums",
+      explanation:
+        "Split the array in half and enumerate every subset sum of each half separately (2^(n/2) each, far " +
+        "smaller than 2ⁿ). Sort one half's sums, then for every sum from the other half, binary-search for " +
+        "the exact complement needed to hit the target.",
+      code:
+        "function subsetSumExists(nums, target) {\n" +
+        "  const n = nums.length;\n" +
+        "  const mid = Math.floor(n / 2);\n" +
+        "  const left = nums.slice(0, mid);\n" +
+        "  const right = nums.slice(mid);\n" +
+        "  function allSums(arr) {\n" +
+        "    const sums = [0];\n" +
+        "    for (const x of arr) {\n" +
+        "      const len = sums.length;\n" +
+        "      for (let i = 0; i < len; i++) sums.push(sums[i] + x);\n" +
+        "    }\n" +
+        "    return sums;\n" +
+        "  }\n" +
+        "  const leftSums = allSums(left);\n" +
+        "  const rightSums = allSums(right).sort((a, b) => a - b);\n" +
+        "  for (const ls of leftSums) {\n" +
+        "    const need = target - ls;\n" +
+        "    let lo = 0, hi = rightSums.length - 1;\n" +
+        "    while (lo <= hi) {\n" +
+        "      const midI = (lo + hi) >> 1;\n" +
+        "      if (rightSums[midI] === need) return true;\n" +
+        "      else if (rightSums[midI] < need) lo = midI + 1;\n" +
+        "      else hi = midI - 1;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return false;\n" +
+        "}",
+    },
+    {
+      approach: "Full subset enumeration (bitmask)",
+      timeComplexity: "O(2ⁿ · n)",
+      spaceComplexity: "O(1) extra beyond the loop counters",
+      explanation:
+        "Walk every possible subset via a bitmask over all n elements and sum it directly. Correct for any " +
+        "input, but the search space doubles with every additional element instead of being split into two " +
+        "independently-enumerable halves.",
+      code:
+        "function subsetSumExists(nums, target) {\n" +
+        "  const n = nums.length;\n" +
+        "  for (let mask = 0; mask < (1 << n); mask++) {\n" +
+        "    let sum = 0;\n" +
+        "    for (let i = 0; i < n; i++) if (mask & (1 << i)) sum += nums[i];\n" +
+        "    if (sum === target) return true;\n" +
+        "  }\n" +
+        "  return false;\n" +
+        "}",
+    },
+  ],
+};
+
+const carPoolingProblem: Problem = {
+  id: "advanced-sweep-line-car-pooling",
+  title: "Car Pooling",
+  difficulty: "Medium",
+  description:
+    "A car with a given capacity picks up and drops off passengers along a route. Given trips as " +
+    "[numPassengers, from, to] and the car's capacity, return whether the car can complete every trip " +
+    "without ever exceeding capacity.",
+  fnName: "carPooling",
+  starterCode: "function carPooling(trips, capacity) {\n  \n}",
+  testCases: [
+    { input: [[[2, 1, 5], [3, 3, 7]], 4], expected: false },
+    { input: [[[2, 1, 5], [3, 3, 7]], 5], expected: true },
+    { input: [[[2, 1, 5]], 1], expected: false },
+    { input: [[], 0], expected: true },
+    { input: [[[3, 2, 7], [3, 7, 9], [8, 3, 9]], 11], expected: true },
+  ],
+  solution:
+    "function carPooling(trips, capacity) {\n" +
+    "  const events = [];\n" +
+    "  for (const [num, from, to] of trips) {\n" +
+    "    events.push([from, num]);\n" +
+    "    events.push([to, -num]);\n" +
+    "  }\n" +
+    "  events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n" +
+    "  let passengers = 0;\n" +
+    "  for (const [, delta] of events) {\n" +
+    "    passengers += delta;\n" +
+    "    if (passengers > capacity) return false;\n" +
+    "  }\n" +
+    "  return true;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Sweep line over sorted pickup/dropoff events",
+      timeComplexity: "O(n log n) — dominated by sorting the 2n events",
+      spaceComplexity: "O(n) for the event list",
+      explanation:
+        "Turn every trip into a +passengers event at its pickup point and a -passengers event at its dropoff " +
+        "point, sort all events by position (drop-offs before pick-ups at the same point), then sweep through " +
+        "accumulating the running passenger count — it only needs to check the capacity at points where the " +
+        "count can actually change.",
+      code:
+        "function carPooling(trips, capacity) {\n" +
+        "  const events = [];\n" +
+        "  for (const [num, from, to] of trips) {\n" +
+        "    events.push([from, num]);\n" +
+        "    events.push([to, -num]);\n" +
+        "  }\n" +
+        "  events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);\n" +
+        "  let passengers = 0;\n" +
+        "  for (const [, delta] of events) {\n" +
+        "    passengers += delta;\n" +
+        "    if (passengers > capacity) return false;\n" +
+        "  }\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      approach: "Difference array over every mile marker",
+      timeComplexity: "O(n + maxLocation) — bounded by the largest drop-off point, not just the trip count",
+      spaceComplexity: "O(maxLocation) for the difference array",
+      explanation:
+        "Apply the same +num/-num deltas directly onto a difference array indexed by location, then walk " +
+        "every single position from 0 to the farthest drop-off, accumulating as it goes. Correct, but it " +
+        "checks capacity at every mile marker rather than only the handful of points where a trip actually " +
+        "starts or ends.",
+      code:
+        "function carPooling(trips, capacity) {\n" +
+        "  const maxLoc = Math.max(0, ...trips.map((t) => t[2])) + 1;\n" +
+        "  const diff = new Array(maxLoc + 1).fill(0);\n" +
+        "  for (const [num, from, to] of trips) {\n" +
+        "    diff[from] += num;\n" +
+        "    diff[to] -= num;\n" +
+        "  }\n" +
+        "  let passengers = 0;\n" +
+        "  for (let i = 0; i <= maxLoc; i++) {\n" +
+        "    passengers += diff[i];\n" +
+        "    if (passengers > capacity) return false;\n" +
+        "  }\n" +
+        "  return true;\n" +
+        "}",
+    },
+  ],
+};
+
+const advanced: Pattern = {
+  id: "advanced",
+  name: "Advanced",
+  subpatterns: [
+    {
+      id: "advanced-two-pointers",
+      name: "Two Pointers",
+      explanation:
+        "Sorting first turns a search for combinations into a pair of pointers that can only move inward, " +
+        "collapsing an O(n²) or O(n³) search over combinations into something the pointers prune as they go.",
+      problems: [threeSumProblem],
+    },
+    {
+      id: "advanced-meet-in-the-middle",
+      name: "Meet in the Middle",
+      explanation:
+        "When the input is too large for full exponential search but still small enough to split in half, " +
+        "solving each half independently and then combining the two smaller results turns 2ⁿ into roughly " +
+        "2 · 2^(n/2) — a huge win for moderate n.",
+      problems: [subsetSumExistsProblem],
+    },
+    {
+      id: "advanced-sweep-line",
+      name: "Sweep Line",
+      explanation:
+        "Converting a set of intervals or ranges into discrete start/end events and processing them in " +
+        "position order turns a question about overlapping ranges into a simple running counter.",
+      problems: [carPoolingProblem],
+    },
+  ],
+};
 
 const rangeStructures = stub("range-structures", "Range Structures", [
   "Prefix Sum",
