@@ -487,6 +487,52 @@ function renderPatternList(): string {
   `;
 }
 
+function renderSystemDesignDiagram(): string {
+  const box = (x: number, y: number, w: number, h: number, label: string, sub: string, subId?: string): string => {
+    const cx = x + w / 2;
+    const content = `
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6"></rect>
+      <text x="${cx}" y="${y + h / 2 - 4}" text-anchor="middle">${escapeHtml(label)}</text>
+      <text class="sysdes-diagram-sub" x="${cx}" y="${y + h / 2 + 12}" text-anchor="middle">${escapeHtml(sub)}</text>
+    `;
+    return subId
+      ? `<a href="#/pattern/system-design/sub/${subId}" class="sysdes-diagram-box">${content}</a>`
+      : `<g class="sysdes-diagram-box">${content}</g>`;
+  };
+  const edge = (path: string): string =>
+    `<path class="sysdes-diagram-edge" d="${path}" marker-end="url(#sysdes-arrow)"></path>`;
+
+  return `
+    <div class="sysdes-diagram-wrap">
+      <p class="sysdes-diagram-caption">
+        Where these building blocks sit in a typical request path — click any box to jump to that sub-pattern.
+      </p>
+      <svg class="sysdes-diagram" viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="sysdes-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path class="sysdes-diagram-arrowhead" d="M0,0 L10,5 L0,10 z"></path>
+          </marker>
+        </defs>
+        ${edge("M112,150 L148,150")}
+        ${edge("M280,150 L316,150")}
+        ${edge("M428,150 L464,46")}
+        ${edge("M428,150 L464,150")}
+        ${edge("M428,150 L464,254")}
+        ${edge("M614,46 L650,150")}
+        ${edge("M614,150 L650,150")}
+        ${edge("M614,254 L650,150")}
+        ${box(8, 122, 104, 56, "Client", "issues a request")}
+        ${box(148, 122, 132, 56, "Traffic Control", "rate limit / idempotency", "sysdes-traffic-control")}
+        ${box(316, 122, 112, 56, "Caching", "LRU / LFU eviction", "sysdes-caching")}
+        ${box(464, 18, 150, 56, "Search & Indexing", "trie / inverted index", "sysdes-search")}
+        ${box(464, 122, 150, 56, "Coordination", "leader election", "sysdes-distributed-coordination")}
+        ${box(464, 226, 150, 56, "Probabilistic", "bloom / count-min", "sysdes-probabilistic")}
+        ${box(650, 122, 140, 56, "Observability", "metrics & dashboards", "sysdes-observability")}
+      </svg>
+    </div>
+  `;
+}
+
 function renderPatternDetail(patternId: string): string {
   const pattern = PATTERNS.find((p) => p.id === patternId);
   if (!pattern) return renderNotFound("Pattern not found.");
@@ -495,6 +541,7 @@ function renderPatternDetail(patternId: string): string {
     <p class="breadcrumb"><a href="#/">All patterns</a></p>
     <h1>${escapeHtml(pattern.name)}</h1>
     <p class="lead">Sub-patterns within ${escapeHtml(pattern.name)}:</p>
+    ${pattern.id === "system-design" ? renderSystemDesignDiagram() : ""}
     <div class="subpattern-list">
       ${pattern.subpatterns
         .map((sp) => {

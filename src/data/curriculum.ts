@@ -42,6 +42,47 @@ const subarraySumEqualsK: Problem = {
     "  }\n" +
     "  return count;\n" +
     "}",
+  solutions: [
+    {
+      approach: "Prefix Sum + HashMap",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Track a running prefix sum and how many times each prefix sum value has occurred. A subarray ending at " +
+        "the current index sums to k exactly when (currentSum - k) was seen before, so each index is O(1) work.",
+      code:
+        "function subarraySumEqualsK(nums, k) {\n" +
+        "  const seen = new Map([[0, 1]]);\n" +
+        "  let sum = 0, count = 0;\n" +
+        "  for (const n of nums) {\n" +
+        "    sum += n;\n" +
+        "    count += seen.get(sum - k) || 0;\n" +
+        "    seen.set(sum, (seen.get(sum) || 0) + 1);\n" +
+        "  }\n" +
+        "  return count;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force (all subarrays)",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Try every start index, extending the end index one step at a time and keeping a running sum. Correct, " +
+        "but re-derives every subarray sum from scratch instead of reusing prefix sums.",
+      code:
+        "function subarraySumEqualsK(nums, k) {\n" +
+        "  let count = 0;\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    let sum = 0;\n" +
+        "    for (let j = i; j < nums.length; j++) {\n" +
+        "      sum += nums[j];\n" +
+        "      if (sum === k) count++;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return count;\n" +
+        "}",
+    },
+  ],
 };
 
 const maxSumSubarrayOfSizeK: Problem = {
@@ -71,6 +112,45 @@ const maxSumSubarrayOfSizeK: Problem = {
     "  }\n" +
     "  return max;\n" +
     "}",
+  solutions: [
+    {
+      approach: "Sliding Window",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Compute the sum of the first window, then slide it one element at a time: add the entering element and " +
+        "subtract the leaving one instead of re-summing the whole window.",
+      code:
+        "function maxSumSubarrayOfSizeK(nums, k) {\n" +
+        "  let windowSum = 0;\n" +
+        "  for (let i = 0; i < k; i++) windowSum += nums[i];\n" +
+        "  let max = windowSum;\n" +
+        "  for (let i = k; i < nums.length; i++) {\n" +
+        "    windowSum += nums[i] - nums[i - k];\n" +
+        "    max = Math.max(max, windowSum);\n" +
+        "  }\n" +
+        "  return max;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force (recompute each window)",
+      timeComplexity: "O(n*k)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Try every window start index and sum its k elements from scratch. Correct, but redoes work the sliding " +
+        "window reuses.",
+      code:
+        "function maxSumSubarrayOfSizeK(nums, k) {\n" +
+        "  let max = -Infinity;\n" +
+        "  for (let i = 0; i + k <= nums.length; i++) {\n" +
+        "    let sum = 0;\n" +
+        "    for (let j = i; j < i + k; j++) sum += nums[j];\n" +
+        "    max = Math.max(max, sum);\n" +
+        "  }\n" +
+        "  return max;\n" +
+        "}",
+    },
+  ],
 };
 
 const arrays: Pattern = {
@@ -141,6 +221,45 @@ const validPalindrome: Problem = {
     "  }\n" +
     "  return true;\n" +
     "}",
+  solutions: [
+    {
+      approach: "Two Pointers",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Clean the string once, then walk pointers inward from both ends, comparing and stopping at the first " +
+        "mismatch. No extra pass needed once the string is cleaned.",
+      code:
+        "function isPalindrome(s) {\n" +
+        "  const clean = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n" +
+        "  let i = 0, j = clean.length - 1;\n" +
+        "  while (i < j) {\n" +
+        "    if (clean[i] !== clean[j]) return false;\n" +
+        "    i++; j--;\n" +
+        "  }\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      approach: "Recursive Slice-and-Compare",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Clean the string, then recursively compare its outer characters and recurse on the substring with " +
+        "both ends trimmed off. Each level slices a new string (an O(n) copy), so total work is quadratic " +
+        "even though the recursion is only n levels deep.",
+      code:
+        "function isPalindrome(s) {\n" +
+        "  const clean = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n" +
+        "  function check(str) {\n" +
+        "    if (str.length <= 1) return true;\n" +
+        "    if (str[0] !== str[str.length - 1]) return false;\n" +
+        "    return check(str.slice(1, -1));\n" +
+        "  }\n" +
+        "  return check(clean);\n" +
+        "}",
+    },
+  ],
 };
 
 const validAnagram: Problem = {
@@ -169,6 +288,41 @@ const validAnagram: Problem = {
     "  }\n" +
     "  return true;\n" +
     "}",
+  solutions: [
+    {
+      approach: "Frequency Map",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Count each character of s into a map, then decrement while walking t. Space is O(1) since the " +
+        "alphabet is fixed-size regardless of string length.",
+      code:
+        "function isAnagram(s, t) {\n" +
+        "  if (s.length !== t.length) return false;\n" +
+        "  const counts = {};\n" +
+        "  for (const c of s) counts[c] = (counts[c] || 0) + 1;\n" +
+        "  for (const c of t) {\n" +
+        "    if (!counts[c]) return false;\n" +
+        "    counts[c]--;\n" +
+        "  }\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      approach: "Sort + Compare",
+      timeComplexity: "O(n log n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Sort both strings' characters and compare the results directly. Simple to reason about, but the sort " +
+        "is asymptotically worse than counting.",
+      code:
+        "function isAnagram(s, t) {\n" +
+        "  if (s.length !== t.length) return false;\n" +
+        "  const sort = (str) => str.split('').sort().join('');\n" +
+        "  return sort(s) === sort(t);\n" +
+        "}",
+    },
+  ],
 };
 
 const stringPattern: Pattern = {
@@ -239,6 +393,42 @@ const twoSum: Problem = {
     "  }\n" +
     "  return [];\n" +
     "}",
+  solutions: [
+    {
+      approach: "One-pass HashMap",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "For each number, check whether its complement was already seen before inserting the current number. " +
+        "The whole array is scanned exactly once.",
+      code:
+        "function twoSum(nums, target) {\n" +
+        "  const seen = new Map();\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    const complement = target - nums[i];\n" +
+        "    if (seen.has(complement)) return [seen.get(complement), i];\n" +
+        "    seen.set(nums[i], i);\n" +
+        "  }\n" +
+        "  return [];\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force (all pairs)",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "Check every pair of indices for a sum match. No extra space, but quadratic time.",
+      code:
+        "function twoSum(nums, target) {\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    for (let j = i + 1; j < nums.length; j++) {\n" +
+        "      if (nums[i] + nums[j] === target) return [i, j];\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return [];\n" +
+        "}",
+    },
+  ],
   // Index order is an implementation detail (which of the pair is found
   // first); only the *set* of indices matters, so sort before comparing.
   normalize: sortNums,
@@ -273,6 +463,46 @@ const groupAnagrams: Problem = {
     "  }\n" +
     "  return [...groups.values()];\n" +
     "}",
+  solutions: [
+    {
+      approach: "Sorted-Key HashMap",
+      timeComplexity: "O(n * k log k)",
+      spaceComplexity: "O(n * k)",
+      explanation:
+        "Bucket each string under its sorted-character signature (k = string length); anagrams share the same " +
+        "signature. Simple, but sorting each string costs an extra log k factor.",
+      code:
+        "function groupAnagrams(strs) {\n" +
+        "  const groups = new Map();\n" +
+        "  for (const s of strs) {\n" +
+        "    const key = s.split('').sort().join('');\n" +
+        "    if (!groups.has(key)) groups.set(key, []);\n" +
+        "    groups.get(key).push(s);\n" +
+        "  }\n" +
+        "  return [...groups.values()];\n" +
+        "}",
+    },
+    {
+      approach: "Character-Count Signature",
+      timeComplexity: "O(n * k)",
+      spaceComplexity: "O(n * k)",
+      explanation:
+        "Build each string's signature from a 26-length lowercase letter count instead of sorting, dropping the " +
+        "log k factor since counting is linear in the string's length.",
+      code:
+        "function groupAnagrams(strs) {\n" +
+        "  const groups = new Map();\n" +
+        "  for (const s of strs) {\n" +
+        "    const counts = new Array(26).fill(0);\n" +
+        "    for (const c of s) counts[c.charCodeAt(0) - 97]++;\n" +
+        "    const key = counts.join(',');\n" +
+        "    if (!groups.has(key)) groups.set(key, []);\n" +
+        "    groups.get(key).push(s);\n" +
+        "  }\n" +
+        "  return [...groups.values()];\n" +
+        "}",
+    },
+  ],
   // Both the group order and the order of strings within each group are
   // implementation details; canonicalize both sides before comparing.
   normalize: canonicalGroups,
@@ -357,6 +587,47 @@ const validParentheses: Problem = {
     "  }\n" +
     "  return stack.length === 0;\n" +
     "}",
+  solutions: [
+    {
+      approach: "Stack",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Push every opening bracket. On a closing bracket, pop and check it matches the expected opener. Valid " +
+        "iff the stack is empty once the string is fully consumed.",
+      code:
+        "function isValidParens(s) {\n" +
+        "  const pairs = { ')': '(', ']': '[', '}': '{' };\n" +
+        "  const stack = [];\n" +
+        "  for (const c of s) {\n" +
+        "    if (c === '(' || c === '[' || c === '{') {\n" +
+        "      stack.push(c);\n" +
+        "    } else {\n" +
+        "      if (stack.pop() !== pairs[c]) return false;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return stack.length === 0;\n" +
+        "}",
+    },
+    {
+      approach: "Iterative Pair Removal",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Repeatedly strip innermost matched pairs ('()', '[]', '{}') until nothing changes. Valid iff the " +
+        "string is empty at the end. Each pass is O(n) and up to O(n) passes may be needed, so it's quadratic " +
+        "in the worst case, but it avoids reasoning about an explicit stack.",
+      code:
+        "function isValidParens(s) {\n" +
+        "  let prev;\n" +
+        "  do {\n" +
+        "    prev = s;\n" +
+        "    s = s.replace('()', '').replace('[]', '').replace('{}', '');\n" +
+        "  } while (s !== prev);\n" +
+        "  return s.length === 0;\n" +
+        "}",
+    },
+  ],
 };
 
 const nextGreaterElements: Problem = {
@@ -388,6 +659,50 @@ const nextGreaterElements: Problem = {
     "  }\n" +
     "  return result;\n" +
     "}",
+  solutions: [
+    {
+      approach: "Monotonic Stack",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Keep a stack of indices whose 'next greater' hasn't been found yet, decreasing top-to-bottom in value. " +
+        "Each index is pushed once and popped at most once, so the total work across the whole array is linear.",
+      code:
+        "function nextGreaterElements(nums) {\n" +
+        "  const result = new Array(nums.length).fill(-1);\n" +
+        "  const stack = [];\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    while (stack.length && nums[i] > nums[stack[stack.length - 1]]) {\n" +
+        "      const idx = stack.pop();\n" +
+        "      result[idx] = nums[i];\n" +
+        "    }\n" +
+        "    stack.push(i);\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force (scan right for each element)",
+      timeComplexity: "O(n^2)",
+      spaceComplexity: "O(1)",
+      explanation:
+        "For each index, scan rightward until a strictly greater element is found. Correct and easy to reason " +
+        "about, but re-scans the array from every starting index.",
+      code:
+        "function nextGreaterElements(nums) {\n" +
+        "  const result = new Array(nums.length).fill(-1);\n" +
+        "  for (let i = 0; i < nums.length; i++) {\n" +
+        "    for (let j = i + 1; j < nums.length; j++) {\n" +
+        "      if (nums[j] > nums[i]) {\n" +
+        "        result[i] = nums[j];\n" +
+        "        break;\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+  ],
 };
 
 const stack: Pattern = {
@@ -434,7 +749,8 @@ const stack: Pattern = {
 // Each problem is graded against ONE fnName/testCases pair like any other
 // problem, but `solutions` additionally lists every conceptually distinct
 // way to solve it, ordered fastest-to-slowest by time complexity — all
-// verified to independently pass the same testCases (see verify/sysdes_verify.mjs).
+// verified to independently pass the same testCases (see verify/verify-solutions.mjs,
+// which covers every pattern's problems, not just System Design).
 
 const lruCache: Problem = {
   id: "sysdes-lru-cache",
@@ -556,6 +872,197 @@ const lruCache: Problem = {
         "      const idx = arr.findIndex(([k]) => k === key);\n" +
         "      if (idx === -1) { results.push(-1); }\n" +
         "      else { const [, value] = arr[idx]; arr.splice(idx, 1); arr.unshift([key, value]); results.push(value); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+  ],
+};
+
+const lfuCache: Problem = {
+  id: "sysdes-lfu-cache",
+  title: "LFU Cache (Caching)",
+  difficulty: "Medium",
+  description:
+    "A stricter sibling of LRU under the 'Caching' glossary term: evict the Least Frequently Used key " +
+    "instead of the least recently used one. Ties (equal frequency) break by evicting whichever of the " +
+    "tied keys was touched least recently. Given a capacity and a sequence of put(key, value)/get(key) " +
+    "operations, return one result per operation: null for put, the value (or -1 if absent) for get. " +
+    "Both get and a put on an existing key count as 'using' that key and bump its frequency by 1.\n\n" +
+    "ops[i] is either \"put\" or \"get\"; argsList[i] holds that operation's arguments.",
+  fnName: "lfuCacheOperations",
+  starterCode: "function lfuCacheOperations(capacity, ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        2,
+        ["put", "put", "get", "put", "get", "get", "put", "get", "get", "get"],
+        [[1, 1], [2, 2], [1], [3, 3], [2], [3], [4, 4], [1], [3], [4]],
+      ],
+      expected: [null, null, 1, null, -1, 3, null, -1, 3, 4],
+    },
+    {
+      input: [0, ["put", "get"], [[0, 0], [0]]],
+      expected: [null, -1],
+    },
+  ],
+  solution:
+    "function lfuCacheOperations(capacity, ops, argsList) {\n" +
+    "  const vals = new Map();\n" +
+    "  const freqs = new Map();\n" +
+    "  const freqGroups = new Map();\n" +
+    "  let minFreq = 0;\n" +
+    "  function touch(key) {\n" +
+    "    const f = freqs.get(key);\n" +
+    "    freqGroups.get(f).delete(key);\n" +
+    "    if (freqGroups.get(f).size === 0) {\n" +
+    "      freqGroups.delete(f);\n" +
+    "      if (minFreq === f) minFreq = f + 1;\n" +
+    "    }\n" +
+    "    freqs.set(key, f + 1);\n" +
+    "    if (!freqGroups.has(f + 1)) freqGroups.set(f + 1, new Set());\n" +
+    "    freqGroups.get(f + 1).add(key);\n" +
+    "  }\n" +
+    "  const results = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], args = argsList[i];\n" +
+    "    if (op === 'put') {\n" +
+    "      if (capacity <= 0) { results.push(null); continue; }\n" +
+    "      const [key, value] = args;\n" +
+    "      if (vals.has(key)) {\n" +
+    "        vals.set(key, value);\n" +
+    "        touch(key);\n" +
+    "      } else {\n" +
+    "        if (vals.size >= capacity) {\n" +
+    "          const evictSet = freqGroups.get(minFreq);\n" +
+    "          const evictKey = evictSet.values().next().value;\n" +
+    "          evictSet.delete(evictKey);\n" +
+    "          if (evictSet.size === 0) freqGroups.delete(minFreq);\n" +
+    "          vals.delete(evictKey);\n" +
+    "          freqs.delete(evictKey);\n" +
+    "        }\n" +
+    "        vals.set(key, value);\n" +
+    "        freqs.set(key, 1);\n" +
+    "        if (!freqGroups.has(1)) freqGroups.set(1, new Set());\n" +
+    "        freqGroups.get(1).add(key);\n" +
+    "        minFreq = 1;\n" +
+    "      }\n" +
+    "      results.push(null);\n" +
+    "    } else {\n" +
+    "      const [key] = args;\n" +
+    "      if (!vals.has(key)) { results.push(-1); }\n" +
+    "      else { const v = vals.get(key); touch(key); results.push(v); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return results;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "HashMap + Frequency Buckets",
+      timeComplexity: "O(1) per operation",
+      spaceComplexity: "O(capacity)",
+      explanation:
+        "Track each key's frequency and group keys into per-frequency Sets, plus a running minFreq pointer. " +
+        "Eviction just pulls the oldest key out of the minFreq group — no scanning required, since Set " +
+        "iteration order preserves insertion order for the least-recently-touched tie-break.",
+      code:
+        "function lfuCacheOperations(capacity, ops, argsList) {\n" +
+        "  const vals = new Map();\n" +
+        "  const freqs = new Map();\n" +
+        "  const freqGroups = new Map();\n" +
+        "  let minFreq = 0;\n" +
+        "  function touch(key) {\n" +
+        "    const f = freqs.get(key);\n" +
+        "    freqGroups.get(f).delete(key);\n" +
+        "    if (freqGroups.get(f).size === 0) {\n" +
+        "      freqGroups.delete(f);\n" +
+        "      if (minFreq === f) minFreq = f + 1;\n" +
+        "    }\n" +
+        "    freqs.set(key, f + 1);\n" +
+        "    if (!freqGroups.has(f + 1)) freqGroups.set(f + 1, new Set());\n" +
+        "    freqGroups.get(f + 1).add(key);\n" +
+        "  }\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], args = argsList[i];\n" +
+        "    if (op === 'put') {\n" +
+        "      if (capacity <= 0) { results.push(null); continue; }\n" +
+        "      const [key, value] = args;\n" +
+        "      if (vals.has(key)) {\n" +
+        "        vals.set(key, value);\n" +
+        "        touch(key);\n" +
+        "      } else {\n" +
+        "        if (vals.size >= capacity) {\n" +
+        "          const evictSet = freqGroups.get(minFreq);\n" +
+        "          const evictKey = evictSet.values().next().value;\n" +
+        "          evictSet.delete(evictKey);\n" +
+        "          if (evictSet.size === 0) freqGroups.delete(minFreq);\n" +
+        "          vals.delete(evictKey);\n" +
+        "          freqs.delete(evictKey);\n" +
+        "        }\n" +
+        "        vals.set(key, value);\n" +
+        "        freqs.set(key, 1);\n" +
+        "        if (!freqGroups.has(1)) freqGroups.set(1, new Set());\n" +
+        "        freqGroups.get(1).add(key);\n" +
+        "        minFreq = 1;\n" +
+        "      }\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      const [key] = args;\n" +
+        "      if (!vals.has(key)) { results.push(-1); }\n" +
+        "      else { const v = vals.get(key); touch(key); results.push(v); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force array (linear scan for lowest frequency)",
+      timeComplexity: "O(n) per operation",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Keep a plain array of {key, value, freq, order}. Every get/put has to scan the whole array to find " +
+        "the entry (O(n)), and eviction rescans it again to find the min-frequency, oldest-order entry (O(n)). " +
+        "Correct, but linear cost on every single operation.",
+      code:
+        "function lfuCacheOperations(capacity, ops, argsList) {\n" +
+        "  let entries = [];\n" +
+        "  let counter = 0;\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], args = argsList[i];\n" +
+        "    if (op === 'put') {\n" +
+        "      if (capacity <= 0) { results.push(null); continue; }\n" +
+        "      const [key, value] = args;\n" +
+        "      const idx = entries.findIndex((e) => e.key === key);\n" +
+        "      if (idx !== -1) {\n" +
+        "        entries[idx].value = value;\n" +
+        "        entries[idx].freq++;\n" +
+        "        entries[idx].order = counter++;\n" +
+        "      } else {\n" +
+        "        if (entries.length >= capacity) {\n" +
+        "          let evictIdx = 0;\n" +
+        "          for (let j = 1; j < entries.length; j++) {\n" +
+        "            if (entries[j].freq < entries[evictIdx].freq ||\n" +
+        "                (entries[j].freq === entries[evictIdx].freq && entries[j].order < entries[evictIdx].order)) {\n" +
+        "              evictIdx = j;\n" +
+        "            }\n" +
+        "          }\n" +
+        "          entries.splice(evictIdx, 1);\n" +
+        "        }\n" +
+        "        entries.push({ key, value, freq: 1, order: counter++ });\n" +
+        "      }\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      const [key] = args;\n" +
+        "      const idx = entries.findIndex((e) => e.key === key);\n" +
+        "      if (idx === -1) { results.push(-1); }\n" +
+        "      else {\n" +
+        "        entries[idx].freq++;\n" +
+        "        entries[idx].order = counter++;\n" +
+        "        results.push(entries[idx].value);\n" +
+        "      }\n" +
         "    }\n" +
         "  }\n" +
         "  return results;\n" +
@@ -697,7 +1204,23 @@ const trieAutocomplete: Problem = {
   normalize: (v) => (Array.isArray(v) ? v.map((g) => (Array.isArray(g) ? [...g].sort() : g)) : v),
   solution:
     "function autocompleteOperations(dictionary, prefixes) {\n" +
-    "  return prefixes.map((prefix) => dictionary.filter((w) => w.startsWith(prefix)).sort());\n" +
+    "  const root = {};\n" +
+    "  for (const word of dictionary) {\n" +
+    "    let node = root;\n" +
+    "    for (const ch of word) { node[ch] = node[ch] || {}; node = node[ch]; }\n" +
+    "    node.$end = word;\n" +
+    "  }\n" +
+    "  function collect(node, out) {\n" +
+    "    if (node.$end) out.push(node.$end);\n" +
+    "    for (const ch in node) { if (ch !== '$end') collect(node[ch], out); }\n" +
+    "  }\n" +
+    "  return prefixes.map((prefix) => {\n" +
+    "    let node = root;\n" +
+    "    for (const ch of prefix) { if (!node[ch]) return []; node = node[ch]; }\n" +
+    "    const out = [];\n" +
+    "    collect(node, out);\n" +
+    "    return out.sort();\n" +
+    "  });\n" +
     "}",
   solutions: [
     {
@@ -736,6 +1259,92 @@ const trieAutocomplete: Problem = {
       code:
         "function autocompleteOperations(dictionary, prefixes) {\n" +
         "  return prefixes.map((prefix) => dictionary.filter((w) => w.startsWith(prefix)).sort());\n" +
+        "}",
+    },
+  ],
+};
+
+const invertedIndexSearch: Problem = {
+  id: "sysdes-inverted-index",
+  title: "Inverted Index Search (Search-as-you-type)",
+  difficulty: "Medium",
+  description:
+    "The structure behind whole-word search (as opposed to autocomplete's prefix search) — the same idea " +
+    "search engines and log search tools use under 'Query Optimization'. Given a list of documents and a " +
+    "list of single-word queries, return the (ascending-sorted) document indices where each queried word " +
+    "appears. Word matching is case-insensitive and punctuation-insensitive.",
+  fnName: "buildAndQuery",
+  starterCode: "function buildAndQuery(documents, queries) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        ["the quick brown fox", "the lazy dog", "quick dogs run"],
+        ["quick", "the", "dog", "cat"],
+      ],
+      expected: [[0, 2], [0, 1], [1], []],
+    },
+    { input: [[""], ["anything"]], expected: [[]] },
+  ],
+  solution:
+    "function buildAndQuery(documents, queries) {\n" +
+    "  const index = new Map();\n" +
+    "  documents.forEach((doc, docIdx) => {\n" +
+    "    const words = new Set(doc.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));\n" +
+    "    for (const w of words) {\n" +
+    "      if (!index.has(w)) index.set(w, new Set());\n" +
+    "      index.get(w).add(docIdx);\n" +
+    "    }\n" +
+    "  });\n" +
+    "  return queries.map((q) => {\n" +
+    "    const set = index.get(q.toLowerCase());\n" +
+    "    return set ? [...set].sort((a, b) => a - b) : [];\n" +
+    "  });\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Inverted Index (word -> Set of document indices)",
+      timeComplexity: "O(D + Q) — D = total words across all documents, Q = number of queries",
+      spaceComplexity: "O(D) — one index entry per distinct (word, document) pair",
+      explanation:
+        "Build the word -> documents map once, up front, in a single pass over every document. After that, " +
+        "each query is a single map lookup — the cost of searching never grows with the number of documents " +
+        "once the index exists, which is exactly why real search engines build an index instead of grepping " +
+        "the corpus per query.",
+      code:
+        "function buildAndQuery(documents, queries) {\n" +
+        "  const index = new Map();\n" +
+        "  documents.forEach((doc, docIdx) => {\n" +
+        "    const words = new Set(doc.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean));\n" +
+        "    for (const w of words) {\n" +
+        "      if (!index.has(w)) index.set(w, new Set());\n" +
+        "      index.get(w).add(docIdx);\n" +
+        "    }\n" +
+        "  });\n" +
+        "  return queries.map((q) => {\n" +
+        "    const set = index.get(q.toLowerCase());\n" +
+        "    return set ? [...set].sort((a, b) => a - b) : [];\n" +
+        "  });\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force scan (re-tokenize every document per query)",
+      timeComplexity: "O(Q * D) — rescans every document's words for every query",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "No index, no setup cost — but every query re-tokenizes and re-scans the entire document set from " +
+        "scratch. Fine for a handful of one-off searches, falls over as either the corpus or the query volume " +
+        "grows.",
+      code:
+        "function buildAndQuery(documents, queries) {\n" +
+        "  return queries.map((q) => {\n" +
+        "    const target = q.toLowerCase();\n" +
+        "    const matches = [];\n" +
+        "    documents.forEach((doc, docIdx) => {\n" +
+        "      const words = doc.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);\n" +
+        "      if (words.includes(target)) matches.push(docIdx);\n" +
+        "    });\n" +
+        "    return matches;\n" +
+        "  });\n" +
         "}",
     },
   ],
@@ -845,6 +1454,159 @@ const clusterConnectivity: Problem = {
   ],
 };
 
+const consistentHashingRing: Problem = {
+  id: "sysdes-consistent-hashing",
+  title: "Consistent Hashing Ring (Leader Election / Service Discovery)",
+  difficulty: "Hard",
+  description:
+    "The routing scheme behind 'Service Discovery' at scale: instead of a plain key % numNodes (which " +
+    "reshuffles almost every key whenever a node joins or leaves), hash both nodes and keys onto the same " +
+    "ring and route each key to the first node clockwise from it. Given a sequence of addNode(name)/" +
+    "removeNode(name)/route(key) operations, return one result per operation: null for add/remove, the " +
+    "owning node's name for route (or null if the ring is empty).\n\n" +
+    "ops[i] is \"addNode\", \"removeNode\", or \"route\"; argsList[i] holds that operation's single argument.",
+  fnName: "consistentHashingOperations",
+  starterCode: "function consistentHashingOperations(ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        ["addNode", "addNode", "addNode", "route", "route", "route", "removeNode", "route"],
+        [["node-a"], ["node-b"], ["node-c"], ["user:1"], ["user:2"], ["user:3"], ["node-b"], ["user:2"]],
+      ],
+      expected: [null, null, null, "node-a", "node-a", "node-a", null, "node-a"],
+    },
+    { input: [["route"], [["user:1"]]], expected: [null] },
+  ],
+  solution:
+    "function consistentHashingOperations(ops, argsList) {\n" +
+    "  const RING_SIZE = 1000;\n" +
+    "  function ringHash(str) {\n" +
+    "    let h = 0;\n" +
+    "    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % RING_SIZE;\n" +
+    "    return h;\n" +
+    "  }\n" +
+    "  function lowerBound(nodes, hash) {\n" +
+    "    let lo = 0, hi = nodes.length;\n" +
+    "    while (lo < hi) {\n" +
+    "      const mid = (lo + hi) >> 1;\n" +
+    "      if (nodes[mid].hash < hash) lo = mid + 1; else hi = mid;\n" +
+    "    }\n" +
+    "    return lo;\n" +
+    "  }\n" +
+    "  let nodes = [];\n" +
+    "  const results = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], args = argsList[i];\n" +
+    "    if (op === 'addNode') {\n" +
+    "      const [name] = args;\n" +
+    "      const hash = ringHash(name);\n" +
+    "      nodes.splice(lowerBound(nodes, hash), 0, { hash, name });\n" +
+    "      results.push(null);\n" +
+    "    } else if (op === 'removeNode') {\n" +
+    "      const [name] = args;\n" +
+    "      nodes = nodes.filter((n) => n.name !== name);\n" +
+    "      results.push(null);\n" +
+    "    } else {\n" +
+    "      const [key] = args;\n" +
+    "      if (nodes.length === 0) { results.push(null); continue; }\n" +
+    "      const pos = lowerBound(nodes, ringHash(key));\n" +
+    "      results.push((pos < nodes.length ? nodes[pos] : nodes[0]).name);\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return results;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Sorted ring + binary search",
+      timeComplexity: "O(log n) per route lookup, O(n) per add/remove (array splice)",
+      spaceComplexity: "O(n) — n = number of nodes",
+      explanation:
+        "Keep nodes sorted by their ring position so route() can binary-search for the first node clockwise " +
+        "of a key instead of scanning. route() is by far the most frequent operation in a real deployment " +
+        "(nodes join/leave rarely, keys route constantly), so this is the operation worth optimizing.",
+      code:
+        "function consistentHashingOperations(ops, argsList) {\n" +
+        "  const RING_SIZE = 1000;\n" +
+        "  function ringHash(str) {\n" +
+        "    let h = 0;\n" +
+        "    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % RING_SIZE;\n" +
+        "    return h;\n" +
+        "  }\n" +
+        "  function lowerBound(nodes, hash) {\n" +
+        "    let lo = 0, hi = nodes.length;\n" +
+        "    while (lo < hi) {\n" +
+        "      const mid = (lo + hi) >> 1;\n" +
+        "      if (nodes[mid].hash < hash) lo = mid + 1; else hi = mid;\n" +
+        "    }\n" +
+        "    return lo;\n" +
+        "  }\n" +
+        "  let nodes = [];\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], args = argsList[i];\n" +
+        "    if (op === 'addNode') {\n" +
+        "      const [name] = args;\n" +
+        "      const hash = ringHash(name);\n" +
+        "      nodes.splice(lowerBound(nodes, hash), 0, { hash, name });\n" +
+        "      results.push(null);\n" +
+        "    } else if (op === 'removeNode') {\n" +
+        "      const [name] = args;\n" +
+        "      nodes = nodes.filter((n) => n.name !== name);\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      const [key] = args;\n" +
+        "      if (nodes.length === 0) { results.push(null); continue; }\n" +
+        "      const pos = lowerBound(nodes, ringHash(key));\n" +
+        "      results.push((pos < nodes.length ? nodes[pos] : nodes[0]).name);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+    {
+      approach: "Unsorted array, linear scan every operation",
+      timeComplexity: "O(n) per operation, including route",
+      spaceComplexity: "O(n)",
+      explanation:
+        "Skip maintaining sorted order — just append on addNode, filter on removeNode, and walk the full node " +
+        "list on every route() to find the closest clockwise hash. Simpler to write, but route() degrades " +
+        "linearly with cluster size instead of logarithmically.",
+      code:
+        "function consistentHashingOperations(ops, argsList) {\n" +
+        "  const RING_SIZE = 1000;\n" +
+        "  function ringHash(str) {\n" +
+        "    let h = 0;\n" +
+        "    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % RING_SIZE;\n" +
+        "    return h;\n" +
+        "  }\n" +
+        "  let nodes = [];\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], args = argsList[i];\n" +
+        "    if (op === 'addNode') {\n" +
+        "      const [name] = args;\n" +
+        "      nodes.push({ hash: ringHash(name), name });\n" +
+        "      results.push(null);\n" +
+        "    } else if (op === 'removeNode') {\n" +
+        "      const [name] = args;\n" +
+        "      nodes = nodes.filter((n) => n.name !== name);\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      const [key] = args;\n" +
+        "      if (nodes.length === 0) { results.push(null); continue; }\n" +
+        "      const hash = ringHash(key);\n" +
+        "      let owner = null;\n" +
+        "      for (const n of nodes) { if (n.hash >= hash && (!owner || n.hash < owner.hash)) owner = n; }\n" +
+        "      if (!owner) { for (const n of nodes) { if (!owner || n.hash < owner.hash) owner = n; } }\n" +
+        "      results.push(owner.name);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+  ],
+};
+
 const bloomFilter: Problem = {
   id: "sysdes-bloom-filter",
   title: "Bloom Filter Membership (Data Operations)",
@@ -892,6 +1654,115 @@ const bloomFilter: Problem = {
         "  function hash2(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 37 + str.charCodeAt(i) * 7) >>> 0; return h % size; }\n" +
         "  for (const item of insertItems) { bits[hash1(item)] = true; bits[hash2(item)] = true; }\n" +
         "  return queryItems.map((q) => bits[hash1(q)] && bits[hash2(q)]);\n" +
+        "}",
+    },
+  ],
+};
+
+const countMinSketch: Problem = {
+  id: "sysdes-count-min-sketch",
+  title: "Count-Min Sketch (Data Operations)",
+  difficulty: "Medium",
+  description:
+    "A probabilistic sibling of Bloom Filter, but for counts instead of membership: given a fixed table " +
+    "width/depth and a sequence of add(item)/estimate(item) operations, return one result per operation: " +
+    "null for add, the estimated count for estimate. Estimates can only ever be an OVER-count (hash " +
+    "collisions inflate a count, they never lose one) — the same tradeoff a CDN or rate limiter makes to " +
+    "track approximate per-key traffic without a per-key counter.",
+  fnName: "countMinSketchOperations",
+  starterCode: "function countMinSketchOperations(width, depth, ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        16,
+        3,
+        ["add", "add", "add", "estimate", "estimate", "estimate"],
+        [["a"], ["a"], ["b"], ["a"], ["b"], ["c"]],
+      ],
+      expected: [null, null, null, 2, 1, 0],
+    },
+  ],
+  solution:
+    "function countMinSketchOperations(width, depth, ops, argsList) {\n" +
+    "  const table = Array.from({ length: depth }, () => new Array(width).fill(0));\n" +
+    "  const seeds = Array.from({ length: depth }, (_, i) => 31 + i * 2);\n" +
+    "  function hashRow(item, row) {\n" +
+    "    let h = 0;\n" +
+    "    for (let i = 0; i < item.length; i++) h = (h * seeds[row] + item.charCodeAt(i)) % width;\n" +
+    "    return ((h % width) + width) % width;\n" +
+    "  }\n" +
+    "  const results = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], [item] = argsList[i];\n" +
+    "    if (op === 'add') {\n" +
+    "      for (let row = 0; row < depth; row++) table[row][hashRow(item, row)]++;\n" +
+    "      results.push(null);\n" +
+    "    } else {\n" +
+    "      let est = Infinity;\n" +
+    "      for (let row = 0; row < depth; row++) est = Math.min(est, table[row][hashRow(item, row)]);\n" +
+    "      results.push(est);\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return results;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Count-Min Sketch (fixed-size table, k independent hashes)",
+      timeComplexity: "O(depth) per operation — depth is a small fixed constant, independent of cardinality",
+      spaceComplexity: "O(width * depth) — fixed, no matter how many distinct items are ever seen",
+      explanation:
+        "Every item is hashed depth independent ways into a shared width-wide counter table; add() increments " +
+        "all depth cells, estimate() reads the minimum across them (the row least corrupted by collisions). " +
+        "Memory never grows with the number of distinct items — the entire point when tracking cardinalities " +
+        "too large to give every key its own counter.",
+      code:
+        "function countMinSketchOperations(width, depth, ops, argsList) {\n" +
+        "  const table = Array.from({ length: depth }, () => new Array(width).fill(0));\n" +
+        "  const seeds = Array.from({ length: depth }, (_, i) => 31 + i * 2);\n" +
+        "  function hashRow(item, row) {\n" +
+        "    let h = 0;\n" +
+        "    for (let i = 0; i < item.length; i++) h = (h * seeds[row] + item.charCodeAt(i)) % width;\n" +
+        "    return ((h % width) + width) % width;\n" +
+        "  }\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], [item] = argsList[i];\n" +
+        "    if (op === 'add') {\n" +
+        "      for (let row = 0; row < depth; row++) table[row][hashRow(item, row)]++;\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      let est = Infinity;\n" +
+        "      for (let row = 0; row < depth; row++) est = Math.min(est, table[row][hashRow(item, row)]);\n" +
+        "      results.push(est);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+    {
+      approach: "Raw event log (exact counting, unbounded memory)",
+      timeComplexity: "O(1) per add, O(n) per estimate — n = number of adds so far",
+      spaceComplexity: "O(n) — stores every raw event, grows forever",
+      explanation:
+        "Just append every add()'d item to a list and count matching entries on estimate() by scanning the " +
+        "whole log. Always exact, never over-counts — but memory is unbounded and estimate() gets slower the " +
+        "longer the stream runs, which is exactly what the sketch exists to avoid.",
+      code:
+        "function countMinSketchOperations(width, depth, ops, argsList) {\n" +
+        "  const events = [];\n" +
+        "  const results = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], [item] = argsList[i];\n" +
+        "    if (op === 'add') {\n" +
+        "      events.push(item);\n" +
+        "      results.push(null);\n" +
+        "    } else {\n" +
+        "      let count = 0;\n" +
+        "      for (const e of events) { if (e === item) count++; }\n" +
+        "      results.push(count);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return results;\n" +
         "}",
     },
   ],
@@ -991,6 +1862,79 @@ const topKFrequent: Problem = {
   ],
 };
 
+const slidingWindowAggregator: Problem = {
+  id: "sysdes-sliding-window-aggregator",
+  title: "Sliding Window Metrics Aggregator (Observability / Performance Metrics)",
+  difficulty: "Medium",
+  description:
+    "The 'what's my request rate over the last N seconds' query behind any live dashboard: given a list of " +
+    "[timestamp, value] events sorted by ascending timestamp, a window size, and a list of ascending-sorted " +
+    "query timestamps, return the sum of event values with timestamp in (q - windowSize, q] for each query q.",
+  fnName: "slidingWindowAggregator",
+  starterCode: "function slidingWindowAggregator(events, windowSize, queries) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [[[1, 5], [2, 3], [4, 2], [5, 10], [9, 1]], 5, [2, 5, 9, 10]],
+      expected: [8, 20, 11, 1],
+    },
+    {
+      input: [[[0, 1], [1, 1], [2, 1]], 1, [0, 1, 2, 3]],
+      expected: [1, 1, 1, 0],
+    },
+  ],
+  solution:
+    "function slidingWindowAggregator(events, windowSize, queries) {\n" +
+    "  let left = 0, right = 0, sum = 0;\n" +
+    "  const results = [];\n" +
+    "  for (const q of queries) {\n" +
+    "    while (right < events.length && events[right][0] <= q) { sum += events[right][1]; right++; }\n" +
+    "    while (left < right && events[left][0] <= q - windowSize) { sum -= events[left][1]; left++; }\n" +
+    "    results.push(sum);\n" +
+    "  }\n" +
+    "  return results;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Two-pointer sliding window",
+      timeComplexity: "O(events + queries) total — each pointer only ever moves forward",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "Since both events and queries are sorted ascending, a right pointer admits events up to the current " +
+        "query time and a left pointer evicts events that fell out of the window — neither pointer ever moves " +
+        "backward, so the whole pass across every query is linear, not quadratic. This is the streaming/" +
+        "windowed-aggregation trick behind live dashboards that can't afford to rescan history per query.",
+      code:
+        "function slidingWindowAggregator(events, windowSize, queries) {\n" +
+        "  let left = 0, right = 0, sum = 0;\n" +
+        "  const results = [];\n" +
+        "  for (const q of queries) {\n" +
+        "    while (right < events.length && events[right][0] <= q) { sum += events[right][1]; right++; }\n" +
+        "    while (left < right && events[left][0] <= q - windowSize) { sum -= events[left][1]; left++; }\n" +
+        "    results.push(sum);\n" +
+        "  }\n" +
+        "  return results;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force rescan per query",
+      timeComplexity: "O(events * queries) — rescans every event for every query",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "For each query, walk the entire event list and sum whatever falls in the window. Doesn't require " +
+        "queries to be sorted, but redoes the full scan from scratch every time — fine for a one-off report, " +
+        "not for a dashboard refreshing every second.",
+      code:
+        "function slidingWindowAggregator(events, windowSize, queries) {\n" +
+        "  return queries.map((q) => {\n" +
+        "    let sum = 0;\n" +
+        "    for (const [t, v] of events) { if (t > q - windowSize && t <= q) sum += v; }\n" +
+        "    return sum;\n" +
+        "  });\n" +
+        "}",
+    },
+  ],
+};
+
 const systemDesign: Pattern = {
   id: "system-design",
   name: "System Design Building Blocks",
@@ -1001,7 +1945,7 @@ const systemDesign: Pattern = {
       explanation:
         "Bounded-size stores that must decide what to evict when full. See the 'Caching' term in the " +
         "System Design glossary (#/concepts).",
-      problems: [lruCache],
+      problems: [lruCache, lfuCache],
     },
     {
       id: "sysdes-traffic-control",
@@ -1015,7 +1959,7 @@ const systemDesign: Pattern = {
       id: "sysdes-search",
       name: "Search & Indexing",
       explanation: "Structures purpose-built for fast prefix/substring lookups over large text.",
-      problems: [trieAutocomplete],
+      problems: [trieAutocomplete, invertedIndexSearch],
     },
     {
       id: "sysdes-distributed-coordination",
@@ -1023,19 +1967,19 @@ const systemDesign: Pattern = {
       explanation:
         "How independent nodes agree on group membership. See 'Leader Election' and 'Service Discovery' in " +
         "the glossary.",
-      problems: [clusterConnectivity],
+      problems: [clusterConnectivity, consistentHashingRing],
     },
     {
       id: "sysdes-probabilistic",
       name: "Probabilistic Structures",
       explanation: "Trading a small, bounded error rate for a large reduction in memory or time.",
-      problems: [bloomFilter],
+      problems: [bloomFilter, countMinSketch],
     },
     {
       id: "sysdes-observability",
       name: "Observability & Metrics",
       explanation: "Turning raw event streams into the aggregates a dashboard actually shows.",
-      problems: [topKFrequent],
+      problems: [topKFrequent, slidingWindowAggregator],
     },
   ],
 };

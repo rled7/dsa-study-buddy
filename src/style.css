@@ -238,6 +238,56 @@ a:hover {
   font-weight: normal;
 }
 
+/* ─── System design flow diagram ──────────────────────────────────────── */
+
+.sysdes-diagram-wrap {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1.25rem 0 1.5rem;
+}
+.sysdes-diagram-caption {
+  margin: 0 0 0.6rem;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+.sysdes-diagram {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.sysdes-diagram-box rect {
+  fill: var(--bg-elevated-2);
+  stroke: var(--border);
+  stroke-width: 1;
+  transition: stroke 0.15s ease, fill 0.15s ease;
+}
+.sysdes-diagram-box:hover rect {
+  stroke: var(--accent);
+  fill: var(--bg-elevated);
+}
+.sysdes-diagram-box text {
+  fill: var(--text);
+  font-size: 12px;
+  font-family: inherit;
+}
+.sysdes-diagram-box .sysdes-diagram-sub {
+  fill: var(--text-dim);
+  font-size: 9.5px;
+}
+.sysdes-diagram-box:hover text {
+  fill: var(--accent);
+}
+.sysdes-diagram-edge {
+  stroke: var(--border);
+  stroke-width: 1.5;
+  fill: none;
+}
+.sysdes-diagram-arrowhead {
+  fill: var(--border);
+}
+
 /* ─── Problem detail ──────────────────────────────────────────────────── */
 
 .description p {
