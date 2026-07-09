@@ -3413,7 +3413,575 @@ const linkedList: Pattern = {
   ],
 };
 
-const trees = stub("trees", "Trees", ["Traversal", "BST", "Lowest Common Ancestor", "Construction"]);
+const TREE_HELPERS_NOTE =
+  "Trees are given as level-order arrays with null for missing children (e.g. [3,9,20,null,null,15,7]), " +
+  "the same format LeetCode uses. Each solution below rebuilds real {val,left,right} node objects internally " +
+  "and operates on them with genuine pointer traversal — the array is only the wire format for test I/O.";
+
+const levelOrderProblem: Problem = {
+  id: "trees-level-order-traversal",
+  title: "Binary Tree Level Order Traversal",
+  difficulty: "Medium",
+  description:
+    `Given a binary tree (level-order array with null gaps), return its values grouped by depth level, ` +
+    `top to bottom, left to right within each level. ${TREE_HELPERS_NOTE}`,
+  fnName: "levelOrder",
+  starterCode: "function levelOrder(arr) {\n  \n}",
+  testCases: [
+    { input: [[3, 9, 20, null, null, 15, 7]], expected: [[3], [9, 20], [15, 7]] },
+    { input: [[1]], expected: [[1]] },
+    { input: [[]], expected: [] },
+    { input: [[1, 2, 3, 4, null, null, 5]], expected: [[1], [2, 3], [4, 5]] },
+  ],
+  solution:
+    "function buildTree(arr) {\n" +
+    "  if (!arr.length || arr[0] === null) return null;\n" +
+    "  const root = { val: arr[0], left: null, right: null };\n" +
+    "  const queue = [root];\n" +
+    "  let i = 1;\n" +
+    "  while (queue.length && i < arr.length) {\n" +
+    "    const node = queue.shift();\n" +
+    "    if (i < arr.length) {\n" +
+    "      const leftVal = arr[i++];\n" +
+    "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+    "    }\n" +
+    "    if (i < arr.length) {\n" +
+    "      const rightVal = arr[i++];\n" +
+    "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return root;\n" +
+    "}\n" +
+    "function levelOrder(arr) {\n" +
+    "  const root = buildTree(arr);\n" +
+    "  if (!root) return [];\n" +
+    "  const result = [];\n" +
+    "  let queue = [root];\n" +
+    "  while (queue.length) {\n" +
+    "    const level = [];\n" +
+    "    const next = [];\n" +
+    "    for (const node of queue) {\n" +
+    "      level.push(node.val);\n" +
+    "      if (node.left) next.push(node.left);\n" +
+    "      if (node.right) next.push(node.right);\n" +
+    "    }\n" +
+    "    result.push(level);\n" +
+    "    queue = next;\n" +
+    "  }\n" +
+    "  return result;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Iterative BFS with a queue",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) — the queue can hold a full level's worth of nodes",
+      explanation:
+        "Process the tree one level at a time: snapshot the current queue as 'this level', collect every " +
+        "child into a fresh queue for the next pass, and record each level's values before moving on.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function levelOrder(arr) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  if (!root) return [];\n" +
+        "  const result = [];\n" +
+        "  let queue = [root];\n" +
+        "  while (queue.length) {\n" +
+        "    const level = [];\n" +
+        "    const next = [];\n" +
+        "    for (const node of queue) {\n" +
+        "      level.push(node.val);\n" +
+        "      if (node.left) next.push(node.left);\n" +
+        "      if (node.right) next.push(node.right);\n" +
+        "    }\n" +
+        "    result.push(level);\n" +
+        "    queue = next;\n" +
+        "  }\n" +
+        "  return result;\n" +
+        "}",
+    },
+    {
+      approach: "Recursive DFS, bucketed by depth",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) for the result plus O(h) recursion stack (tree height h)",
+      explanation:
+        "Depth-first walk the tree while tracking the current depth, pushing each node's value into the " +
+        "result bucket for that depth (creating the bucket on first visit). No queue needed at all.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function levelOrder(arr) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  const result = [];\n" +
+        "  function dfs(node, depth) {\n" +
+        "    if (!node) return;\n" +
+        "    if (!result[depth]) result[depth] = [];\n" +
+        "    result[depth].push(node.val);\n" +
+        "    dfs(node.left, depth + 1);\n" +
+        "    dfs(node.right, depth + 1);\n" +
+        "  }\n" +
+        "  dfs(root, 0);\n" +
+        "  return result;\n" +
+        "}",
+    },
+  ],
+};
+
+const isValidBSTProblem: Problem = {
+  id: "trees-validate-bst",
+  title: "Validate Binary Search Tree",
+  difficulty: "Medium",
+  description:
+    `Given a binary tree (level-order array with null gaps), determine whether it is a valid binary search ` +
+    `tree: every node's value must be strictly greater than all values in its left subtree and strictly less ` +
+    `than all values in its right subtree. ${TREE_HELPERS_NOTE}`,
+  fnName: "isValidBST",
+  starterCode: "function isValidBST(arr) {\n  \n}",
+  testCases: [
+    { input: [[2, 1, 3]], expected: true },
+    { input: [[5, 1, 4, null, null, 3, 6]], expected: false },
+    { input: [[1, 1]], expected: false },
+    { input: [[3, 1, 5, 0, 2, 4, 6]], expected: true },
+    { input: [[]], expected: true },
+  ],
+  solution:
+    "function buildTree(arr) {\n" +
+    "  if (!arr.length || arr[0] === null) return null;\n" +
+    "  const root = { val: arr[0], left: null, right: null };\n" +
+    "  const queue = [root];\n" +
+    "  let i = 1;\n" +
+    "  while (queue.length && i < arr.length) {\n" +
+    "    const node = queue.shift();\n" +
+    "    if (i < arr.length) {\n" +
+    "      const leftVal = arr[i++];\n" +
+    "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+    "    }\n" +
+    "    if (i < arr.length) {\n" +
+    "      const rightVal = arr[i++];\n" +
+    "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return root;\n" +
+    "}\n" +
+    "function isValidBST(arr) {\n" +
+    "  const root = buildTree(arr);\n" +
+    "  const vals = [];\n" +
+    "  function inorder(node) {\n" +
+    "    if (!node) return;\n" +
+    "    inorder(node.left);\n" +
+    "    vals.push(node.val);\n" +
+    "    inorder(node.right);\n" +
+    "  }\n" +
+    "  inorder(root);\n" +
+    "  for (let i = 1; i < vals.length; i++) if (vals[i] <= vals[i - 1]) return false;\n" +
+    "  return true;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Inorder traversal must be strictly increasing",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) — stores every value from the inorder walk",
+      explanation:
+        "A BST's inorder traversal visits values in sorted order if and only if the tree is valid. Collect " +
+        "the inorder sequence, then check it's strictly increasing.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function isValidBST(arr) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  const vals = [];\n" +
+        "  function inorder(node) {\n" +
+        "    if (!node) return;\n" +
+        "    inorder(node.left);\n" +
+        "    vals.push(node.val);\n" +
+        "    inorder(node.right);\n" +
+        "  }\n" +
+        "  inorder(root);\n" +
+        "  for (let i = 1; i < vals.length; i++) if (vals[i] <= vals[i - 1]) return false;\n" +
+        "  return true;\n" +
+        "}",
+    },
+    {
+      approach: "Recursive min/max bounds",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(h) recursion stack only — no extra array (tree height h)",
+      explanation:
+        "Pass down a valid (lo, hi) range as you descend: a node must fall strictly inside its inherited " +
+        "range, and it narrows the range further for each subtree. No values need to be stored.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function isValidBST(arr) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  function helper(node, lo, hi) {\n" +
+        "    if (!node) return true;\n" +
+        "    if (node.val <= lo || node.val >= hi) return false;\n" +
+        "    return helper(node.left, lo, node.val) && helper(node.right, node.val, hi);\n" +
+        "  }\n" +
+        "  return helper(root, -Infinity, Infinity);\n" +
+        "}",
+    },
+  ],
+};
+
+const lcaProblem: Problem = {
+  id: "trees-lowest-common-ancestor",
+  title: "Lowest Common Ancestor of a Binary Tree",
+  difficulty: "Medium",
+  description:
+    `Given a binary tree (level-order array with null gaps) and two values p and q known to exist in the ` +
+    `tree, return the value of their lowest common ancestor — the deepest node that has both p and q as ` +
+    `descendants (a node can be its own descendant). ${TREE_HELPERS_NOTE}`,
+  fnName: "lowestCommonAncestor",
+  starterCode: "function lowestCommonAncestor(arr, p, q) {\n  \n}",
+  testCases: [
+    { input: [[3, 5, 1, 6, 2, 0, 8, null, null, 7, 4], 5, 1], expected: 3 },
+    { input: [[3, 5, 1, 6, 2, 0, 8, null, null, 7, 4], 5, 4], expected: 5 },
+    { input: [[1, 2], 1, 2], expected: 1 },
+  ],
+  solution:
+    "function buildTree(arr) {\n" +
+    "  if (!arr.length || arr[0] === null) return null;\n" +
+    "  const root = { val: arr[0], left: null, right: null };\n" +
+    "  const queue = [root];\n" +
+    "  let i = 1;\n" +
+    "  while (queue.length && i < arr.length) {\n" +
+    "    const node = queue.shift();\n" +
+    "    if (i < arr.length) {\n" +
+    "      const leftVal = arr[i++];\n" +
+    "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+    "    }\n" +
+    "    if (i < arr.length) {\n" +
+    "      const rightVal = arr[i++];\n" +
+    "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return root;\n" +
+    "}\n" +
+    "function lowestCommonAncestor(arr, p, q) {\n" +
+    "  const root = buildTree(arr);\n" +
+    "  function find(node) {\n" +
+    "    if (!node) return null;\n" +
+    "    if (node.val === p || node.val === q) return node;\n" +
+    "    const left = find(node.left);\n" +
+    "    const right = find(node.right);\n" +
+    "    if (left && right) return node;\n" +
+    "    return left || right;\n" +
+    "  }\n" +
+    "  const res = find(root);\n" +
+    "  return res ? res.val : null;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Recursive single-pass search",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(h) recursion stack (tree height h)",
+      explanation:
+        "Recurse into both subtrees. If a call returns a hit from both sides, the current node is the LCA; " +
+        "otherwise bubble up whichever side (if any) found something.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function lowestCommonAncestor(arr, p, q) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  function find(node) {\n" +
+        "    if (!node) return null;\n" +
+        "    if (node.val === p || node.val === q) return node;\n" +
+        "    const left = find(node.left);\n" +
+        "    const right = find(node.right);\n" +
+        "    if (left && right) return node;\n" +
+        "    return left || right;\n" +
+        "  }\n" +
+        "  const res = find(root);\n" +
+        "  return res ? res.val : null;\n" +
+        "}",
+    },
+    {
+      approach: "Iterative parent pointers + ancestor set",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) — stores a parent pointer for every node in the tree",
+      explanation:
+        "Walk the whole tree once (iteratively, with a stack) recording each node's parent. Then walk p's " +
+        "ancestor chain into a set, and walk q's ancestor chain until it hits something already in that set.",
+      code:
+        "function buildTree(arr) {\n" +
+        "  if (!arr.length || arr[0] === null) return null;\n" +
+        "  const root = { val: arr[0], left: null, right: null };\n" +
+        "  const queue = [root];\n" +
+        "  let i = 1;\n" +
+        "  while (queue.length && i < arr.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (i < arr.length) {\n" +
+        "      const leftVal = arr[i++];\n" +
+        "      if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "    }\n" +
+        "    if (i < arr.length) {\n" +
+        "      const rightVal = arr[i++];\n" +
+        "      if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return root;\n" +
+        "}\n" +
+        "function lowestCommonAncestor(arr, p, q) {\n" +
+        "  const root = buildTree(arr);\n" +
+        "  const parent = new Map();\n" +
+        "  const stack = [root];\n" +
+        "  parent.set(root, null);\n" +
+        "  let pNode = null, qNode = null;\n" +
+        "  while (stack.length) {\n" +
+        "    const node = stack.pop();\n" +
+        "    if (node.val === p) pNode = node;\n" +
+        "    if (node.val === q) qNode = node;\n" +
+        "    if (node.left) { parent.set(node.left, node); stack.push(node.left); }\n" +
+        "    if (node.right) { parent.set(node.right, node); stack.push(node.right); }\n" +
+        "  }\n" +
+        "  const ancestors = new Set();\n" +
+        "  let cur = pNode;\n" +
+        "  while (cur) { ancestors.add(cur); cur = parent.get(cur); }\n" +
+        "  cur = qNode;\n" +
+        "  while (cur && !ancestors.has(cur)) cur = parent.get(cur);\n" +
+        "  return cur ? cur.val : null;\n" +
+        "}",
+    },
+  ],
+};
+
+const buildTreeFromTraversalsProblem: Problem = {
+  id: "trees-construct-from-preorder-inorder",
+  title: "Construct Binary Tree from Preorder and Inorder Traversal",
+  difficulty: "Medium",
+  description:
+    "Given a tree's preorder and inorder traversal arrays (values assumed unique), rebuild the tree and " +
+    "return it as a level-order array with null gaps — the same format used elsewhere in this pattern. " +
+    "Preorder gives root-first ordering; inorder tells you, for any subtree, which values fall to the left " +
+    "of its root and which fall to the right.",
+  fnName: "buildTreeFromTraversals",
+  starterCode: "function buildTreeFromTraversals(preorder, inorder) {\n  \n}",
+  testCases: [
+    { input: [[3, 9, 20, 15, 7], [9, 3, 15, 20, 7]], expected: [3, 9, 20, null, null, 15, 7] },
+    { input: [[-1], [-1]], expected: [-1] },
+    { input: [[1, 2, 3], [3, 2, 1]], expected: [1, 2, null, 3] },
+  ],
+  solution:
+    "function serialize(root) {\n" +
+    "  if (!root) return [];\n" +
+    "  const result = [];\n" +
+    "  const queue = [root];\n" +
+    "  while (queue.length) {\n" +
+    "    const node = queue.shift();\n" +
+    "    if (node) { result.push(node.val); queue.push(node.left); queue.push(node.right); }\n" +
+    "    else { result.push(null); }\n" +
+    "  }\n" +
+    "  while (result.length && result[result.length - 1] === null) result.pop();\n" +
+    "  return result;\n" +
+    "}\n" +
+    "function buildTreeFromTraversals(preorder, inorder) {\n" +
+    "  const indexMap = new Map();\n" +
+    "  inorder.forEach((v, i) => indexMap.set(v, i));\n" +
+    "  let preIdx = 0;\n" +
+    "  function build(inLo, inHi) {\n" +
+    "    if (inLo > inHi) return null;\n" +
+    "    const rootVal = preorder[preIdx++];\n" +
+    "    const node = { val: rootVal, left: null, right: null };\n" +
+    "    const mid = indexMap.get(rootVal);\n" +
+    "    node.left = build(inLo, mid - 1);\n" +
+    "    node.right = build(mid + 1, inHi);\n" +
+    "    return node;\n" +
+    "  }\n" +
+    "  return serialize(build(0, inorder.length - 1));\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Hashmap-indexed recursion",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(n) — the index map plus the recursion stack",
+      explanation:
+        "Precompute each inorder value's index in a map so the root's split point is an O(1) lookup instead " +
+        "of a scan. Preorder is consumed left to right as root values; inorder bounds shrink each recursive call.",
+      code:
+        "function serialize(root) {\n" +
+        "  if (!root) return [];\n" +
+        "  const result = [];\n" +
+        "  const queue = [root];\n" +
+        "  while (queue.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (node) { result.push(node.val); queue.push(node.left); queue.push(node.right); }\n" +
+        "    else { result.push(null); }\n" +
+        "  }\n" +
+        "  while (result.length && result[result.length - 1] === null) result.pop();\n" +
+        "  return result;\n" +
+        "}\n" +
+        "function buildTreeFromTraversals(preorder, inorder) {\n" +
+        "  const indexMap = new Map();\n" +
+        "  inorder.forEach((v, i) => indexMap.set(v, i));\n" +
+        "  let preIdx = 0;\n" +
+        "  function build(inLo, inHi) {\n" +
+        "    if (inLo > inHi) return null;\n" +
+        "    const rootVal = preorder[preIdx++];\n" +
+        "    const node = { val: rootVal, left: null, right: null };\n" +
+        "    const mid = indexMap.get(rootVal);\n" +
+        "    node.left = build(inLo, mid - 1);\n" +
+        "    node.right = build(mid + 1, inHi);\n" +
+        "    return node;\n" +
+        "  }\n" +
+        "  return serialize(build(0, inorder.length - 1));\n" +
+        "}",
+    },
+    {
+      approach: "Naive indexOf + slice recursion",
+      timeComplexity: "O(n²)",
+      spaceComplexity: "O(n²) — each recursive level slices a fresh subarray",
+      explanation:
+        "Instead of precomputing indices, scan for the root's position with indexOf and slice the inorder " +
+        "array into left/right halves on every call. Correct, but the repeated scans and array copies add up.",
+      code:
+        "function serialize(root) {\n" +
+        "  if (!root) return [];\n" +
+        "  const result = [];\n" +
+        "  const queue = [root];\n" +
+        "  while (queue.length) {\n" +
+        "    const node = queue.shift();\n" +
+        "    if (node) { result.push(node.val); queue.push(node.left); queue.push(node.right); }\n" +
+        "    else { result.push(null); }\n" +
+        "  }\n" +
+        "  while (result.length && result[result.length - 1] === null) result.pop();\n" +
+        "  return result;\n" +
+        "}\n" +
+        "function buildTreeFromTraversals(preorder, inorder) {\n" +
+        "  let preIdx = 0;\n" +
+        "  function build(inSub) {\n" +
+        "    if (!inSub.length) return null;\n" +
+        "    const rootVal = preorder[preIdx++];\n" +
+        "    const node = { val: rootVal, left: null, right: null };\n" +
+        "    const mid = inSub.indexOf(rootVal);\n" +
+        "    node.left = build(inSub.slice(0, mid));\n" +
+        "    node.right = build(inSub.slice(mid + 1));\n" +
+        "    return node;\n" +
+        "  }\n" +
+        "  return serialize(build(inorder));\n" +
+        "}",
+    },
+  ],
+};
+
+const trees: Pattern = {
+  id: "trees",
+  name: "Trees",
+  subpatterns: [
+    {
+      id: "trees-traversal",
+      name: "Traversal",
+      explanation:
+        "Visit every node exactly once, in an order that suits the question being asked — breadth-first " +
+        "level by level for shortest-path-style questions, or depth-first for questions about subtree shape.",
+      problems: [levelOrderProblem],
+    },
+    {
+      id: "trees-bst",
+      name: "BST",
+      explanation:
+        "A binary search tree keeps every left descendant smaller and every right descendant larger than " +
+        "the current node, which turns search, insert, and validity checks into O(h) operations.",
+      problems: [isValidBSTProblem],
+    },
+    {
+      id: "trees-lowest-common-ancestor",
+      name: "Lowest Common Ancestor",
+      explanation:
+        "Find the deepest node that is an ancestor of two given nodes — the point where their paths back to " +
+        "the root first converge.",
+      problems: [lcaProblem],
+    },
+    {
+      id: "trees-construction",
+      name: "Construction",
+      explanation:
+        "Rebuild a tree from other representations, such as a pair of traversal orders — each traversal " +
+        "type constrains the shape differently, and combining two is usually enough to pin it down uniquely.",
+      problems: [buildTreeFromTraversalsProblem],
+    },
+  ],
+};
 
 const recursion = stub("recursion", "Recursion", [
   "Backtracking",
