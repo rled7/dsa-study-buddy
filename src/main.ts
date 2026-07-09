@@ -24,6 +24,9 @@ import { runTests, formatValue, type RunResult } from "./runner";
 import { isSolved, markSolved, countSolved } from "./progress";
 import { saveSolutionCode } from "./solutions";
 import { ingestText, getAllChunks, clearBrain, retrieveRelevant, type BrainChunk } from "./brain";
+import { buildExportPayload } from "./export";
+import { pushExportToGitHub, type PushSummary } from "./export-github";
+import { getToken, saveToken, clearToken } from "./github-token";
 
 // ─── Routing ───────────────────────────────────────────────────────────────
 
@@ -34,6 +37,7 @@ type Route =
   | { view: "reference" }
   | { view: "referenceLang"; langId: string }
   | { view: "brain" }
+  | { view: "export" }
   | { view: "pattern"; patternId: string }
   | { view: "subpattern"; patternId: string; subId: string }
   | { view: "problem"; problemId: string };
@@ -55,6 +59,9 @@ function parseRoute(): Route {
   }
   if (parts[0] === "brain") {
     return { view: "brain" };
+  }
+  if (parts[0] === "export") {
+    return { view: "export" };
   }
   if (parts[0] === "pattern" && parts[1] && parts[2] === "sub" && parts[3]) {
     return { view: "subpattern", patternId: parts[1], subId: parts[3] };
@@ -247,6 +254,10 @@ function renderSidebar(route: Route): string {
       <span class="sidebar-name">Feed the Brain</span>
       <span class="sidebar-progress${brainChunks.length === 0 ? " sidebar-progress--stub" : ""}">${brainChunks.length}</span>
     </a>
+    <a class="sidebar-item${route.view === "export" ? " active" : ""}" href="#/export">
+      <span class="sidebar-index">&#8593;</span>
+      <span class="sidebar-name">Export to GitHub</span>
+    </a>
   `;
 }
 
@@ -257,6 +268,7 @@ function renderContent(route: Route): string {
   if (route.view === "reference") return renderReferenceList();
   if (route.view === "referenceLang") return renderReferenceDetail(route.langId);
   if (route.view === "brain") return renderBrainPage();
+  if (route.view === "export") return renderExportPage();
   if (route.view === "pattern") return renderPatternDetail(route.patternId);
   if (route.view === "subpattern") return renderSubpatternDetail(route.patternId, route.subId);
   return renderProblemDetail(route.problemId);
@@ -308,6 +320,66 @@ function renderBrainPage(): string {
     <div id="ingest-status" class="buddy-response"></div>
     <h2>What the brain knows (${brainChunks.length} chunks, ${sourceCount} source${sourceCount === 1 ? "" : "s"}, ${totalChars.toLocaleString()} chars)</h2>
     ${chunkList}
+  `;
+}
+
+function renderExportPage(): string {
+  const payload = buildExportPayload();
+  const savedToken = getToken();
+
+  const preview =
+    payload.solvedCount === 0
+      ? `<p class="coming-soon">Solve a problem first — nothing to export yet.</p>`
+      : `<p class="lead">
+          ${payload.solvedCount} problem${payload.solvedCount === 1 ? "" : "s"} solved, ready to push
+          as ${payload.files.length} file${payload.files.length === 1 ? "" : "s"}
+          (code files + a generated README index).
+        </p>`;
+
+  return `
+    <h1>Export to GitHub</h1>
+    <p class="lead">
+      Push your solved solutions straight to a GitHub repo you own, organized by pattern with a
+      generated README. Needs a
+      <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noopener">
+        fine-grained personal access token
+      </a>
+      scoped to just that repo's Contents (read + write).
+    </p>
+    ${preview}
+    <form id="export-form">
+      <label class="export-field">
+        <span>Personal access token</span>
+        <input
+          type="password"
+          id="export-token"
+          placeholder="github_pat_..."
+          autocomplete="off"
+          value="${savedToken ? escapeHtml(savedToken) : ""}"
+        />
+      </label>
+      <div class="export-field-row">
+        <label class="export-field">
+          <span>Repo owner</span>
+          <input type="text" id="export-owner" placeholder="rled7" autocomplete="off" />
+        </label>
+        <label class="export-field">
+          <span>Repo name</span>
+          <input type="text" id="export-repo" placeholder="my-dsa-solutions" autocomplete="off" />
+        </label>
+        <label class="export-field">
+          <span>Branch (optional)</span>
+          <input type="text" id="export-branch" placeholder="default branch" autocomplete="off" />
+        </label>
+      </div>
+      <div class="editor-actions">
+        <button type="submit" class="primary-btn" id="export-push-btn" ${payload.solvedCount === 0 ? "disabled" : ""}>
+          Push to GitHub
+        </button>
+        <button type="button" class="secondary-btn" id="export-forget-token-btn">Forget saved token</button>
+      </div>
+    </form>
+    <div id="export-status" class="buddy-response"></div>
   `;
 }
 
@@ -712,6 +784,10 @@ function wireContentEvents(route: Route): void {
     wireBrainPageEvents();
     return;
   }
+  if (route.view === "export") {
+    wireExportPageEvents();
+    return;
+  }
   if (route.view !== "problem") return;
   const found = findProblem(route.problemId);
   if (!found) return;
@@ -781,6 +857,75 @@ function wireBrainPageEvents(): void {
     clearBrain()
       .then(() => refreshBrainChunks())
       .then(renderApp);
+  });
+}
+
+function renderPushSummary(summary: PushSummary): string {
+  const rows = summary.results
+    .map((r) => {
+      const label = r.status === "failed" ? `failed — ${escapeHtml(r.error ?? "unknown error")}` : r.status;
+      return `<li class="export-result export-result--${r.status}">${escapeHtml(r.path)}: ${label}</li>`;
+    })
+    .join("");
+  const failCount = summary.results.filter((r) => r.status === "failed").length;
+  return `
+    <p>
+      Pushed to <a href="${summary.repoUrl}/tree/${summary.branch}" target="_blank" rel="noopener">
+        ${escapeHtml(summary.repoUrl.replace("https://github.com/", ""))}@${escapeHtml(summary.branch)}
+      </a>${failCount > 0 ? ` — ${failCount} of ${summary.results.length} file(s) failed:` : ", all files succeeded:"}
+    </p>
+    <ul class="export-result-list">${rows}</ul>
+  `;
+}
+
+function wireExportPageEvents(): void {
+  const form = document.querySelector<HTMLFormElement>("#export-form")!;
+  const tokenInput = document.querySelector<HTMLInputElement>("#export-token")!;
+  const ownerInput = document.querySelector<HTMLInputElement>("#export-owner")!;
+  const repoInput = document.querySelector<HTMLInputElement>("#export-repo")!;
+  const branchInput = document.querySelector<HTMLInputElement>("#export-branch")!;
+  const pushBtn = document.querySelector<HTMLButtonElement>("#export-push-btn")!;
+  const forgetBtn = document.querySelector<HTMLButtonElement>("#export-forget-token-btn")!;
+  const status = document.querySelector<HTMLDivElement>("#export-status")!;
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const token = tokenInput.value.trim();
+    const owner = ownerInput.value.trim();
+    const repo = repoInput.value.trim();
+    const branch = branchInput.value.trim();
+    if (!token || !owner || !repo) {
+      status.classList.add("buddy-response--error");
+      status.textContent = "Token, owner, and repo are all required.";
+      return;
+    }
+
+    saveToken(token);
+    pushBtn.disabled = true;
+    status.classList.remove("buddy-response--error");
+    status.textContent = "Pushing…";
+
+    const payload = buildExportPayload();
+    pushExportToGitHub(payload, { token, owner, repo, branch: branch || undefined })
+      .then((summary) => {
+        const failCount = summary.results.filter((r) => r.status === "failed").length;
+        status.classList.toggle("buddy-response--error", failCount > 0);
+        status.innerHTML = renderPushSummary(summary);
+        pushBtn.disabled = false;
+      })
+      .catch((err) => {
+        console.error("Export push failed:", err);
+        status.classList.add("buddy-response--error");
+        status.textContent = err instanceof Error ? err.message : "Push failed.";
+        pushBtn.disabled = false;
+      });
+  });
+
+  forgetBtn.addEventListener("click", () => {
+    clearToken();
+    tokenInput.value = "";
+    status.classList.remove("buddy-response--error");
+    status.textContent = "Saved token forgotten.";
   });
 }
 

@@ -214,6 +214,38 @@ Two changes bundled together:
   of showing a plain one-line definition; 32 strategies total, each with a description, ASCII
   diagram, and code snippet.
 
+## v9 — Export solved solutions to GitHub
+
+A one-way export: take everything you've solved locally and push it to a real GitHub repo you
+own, so your solutions live somewhere permanent and shareable outside `localStorage`.
+
+- **`src/export.ts`** — pure payload builder, no network/DOM. Reads every solved problem's saved
+  code (`src/solutions.ts`), groups it by pattern in curriculum order, and generates a
+  `README.md` index (`## Arrays`, `## Hashing`, etc., each entry linking to its file) alongside
+  one `.js` file per problem (with a header comment naming the problem, pattern, and difficulty).
+  A solved id whose problem no longer exists in the curriculum is skipped silently rather than
+  crashing the export.
+- **`src/export-github.ts`** — `pushExportToGitHub()` pushes that payload to a real repo via the
+  GitHub REST Contents API, one commit per file. Resolves the repo's default branch
+  automatically unless you specify one, checks each file's existing sha first to decide
+  create-vs-update, and isolates per-file failures (one bad path or transient error doesn't
+  abort the rest of the push — every file gets its own reported outcome). Content is base64-
+  encoded through raw UTF-8 bytes rather than a plain `btoa()` call, so non-Latin1 characters in
+  comments (accents, em-dashes, etc.) survive the round trip.
+- **`src/github-token.ts`** — a GitHub PAT is entered once and persisted in `localStorage`
+  (`dsa_study_buddy_github_token_v1`) so you don't re-enter it every session. This is a
+  single-user local app with no server, so there's nowhere more secure to keep it without adding
+  a backend that doesn't otherwise exist — same trade-off any locally-run dev CLI makes when it
+  caches a token on disk. A **"Forget saved token"** button clears it on demand.
+- **New `#/export` page** (sidebar link) — shows how many problems are solved, a form for repo
+  owner / repo name / optional branch, and a **Push to GitHub** button that's disabled until at
+  least one problem is solved. After pushing, a status panel lists each file's outcome
+  (created/updated/failed) and links to the pushed branch.
+
+**Setup note:** the PAT needs a fine-grained GitHub token scoped to just the target repo's
+Contents (read + write) — classic tokens with repo scope work too, but fine-grained is
+recommended since it can't touch anything outside the one repo you name.
+
 ## What's in v1
 
 - **Curriculum browser** — the full 16-pattern structure (Arrays, String, Hashing, Stack,
@@ -236,21 +268,32 @@ Two changes bundled together:
 
 ### Honest content coverage
 
-Real, working practice problems (description + test cases + reference solution) are seeded
-for **5 of the 17 patterns** (15 problems total):
+**Updated 2026-07-09 — this section originally said 5 of 17 patterns; that's no longer true.**
+A dedicated content pass (11 commits, same day) filled in every subpattern that was still
+showing the "problems coming soon" placeholder. Verified via `verify/verify-solutions.mjs
+--coverage`, which actually runs every `solution` and every `solutions[].code` against that
+problem's own test cases rather than trusting the source counts:
 
-- **Arrays**: Subarray Sum Equals K (Prefix Sum), Maximum Sum Subarray of Size K (Sliding Window)
-- **String**: Valid Anagram (Anagram/Frequency Count), Valid Palindrome (Palindrome)
-- **Hashing**: Two Sum, Group Anagrams
-- **Stack**: Valid Parentheses (Balanced Parentheses), Next Greater Element (Next Greater/Smaller)
-- **System Design Building Blocks** (v5): LRU Cache, Rate Limiter, Idempotency Key Store,
-  Prefix Autocomplete, Cluster Connectivity, Bloom Filter Membership, Top-K Frequent Items —
-  each with 2-3 solutions ordered fastest-to-slowest.
+```
+Checked 71 problems, 214 code blocks (solution + solutions[].code).
+Empty subpatterns remaining: 0
+ALL PASS
+```
 
-The other **12 patterns** show their full sub-pattern structure and a plain-English
-explanation per sub-pattern, but their problem lists are empty with a "problems coming soon"
-placeholder. This is intentional scoping for v1, not a bug — breadth of structure now,
-depth of content grows over time by adding entries to one data file.
+**All 16 core patterns** now have a real, working problem (description + test cases +
+reference solution, most with 2 solutions of genuinely different time complexity) in every one
+of their 51 subpatterns — Arrays, String, Hashing, Stack, Queue/Deque, Linked List, Trees,
+Recursion, Heap, Graphs, Trie, Dynamic Programming, Greedy, Bit Manipulation, Advanced, and
+Range Structures.
+
+**System Design Building Blocks** (the 17th pattern, added in v5 and expanded 2026-07-08) has
+12 problems across its 6 subpattern groups (Caching, Traffic Control, Search, Distributed
+Coordination, Probabilistic Structures, Observability) — LRU Cache, Rate Limiter, Idempotency
+Key Store, Prefix Autocomplete, Cluster Connectivity, Bloom Filter Membership, Top-K Frequent
+Items, and 5 more, each with 2-3 solutions ordered fastest-to-slowest.
+
+There is no longer a "coming soon" placeholder anywhere in the curriculum — the
+`stub()` helper that generated it was deleted along with the last empty subpattern.
 
 ## How to add a problem
 
@@ -481,6 +524,30 @@ assumed from the source array length. Spot-checked exact strategy name lists for
 pages against the authored content. Confirmed the original 11-strategy caching deep dive was
 unaffected (no regression) and the breadcrumb still links back to `#/concepts`. Crash log stayed
 empty.
+
+## Verification (v9)
+
+Two CDP passes, both stubbing `window.fetch` inside an isolated browser context — no real
+network call, no real token, ever:
+
+**`verify/export_github_verify.mjs` (7 checks, logic-level):** all-new-files create correctly;
+an explicit branch skips the default-branch lookup call entirely; an existing file is updated
+with its fetched sha while a genuinely-new file in the same push is still created (not
+skipped); one file's request failing doesn't stop the rest of the batch from completing; a
+missing/inaccessible repo throws before any per-file call is attempted; a UTF-8 string with
+accented characters, a checkmark, and an em-dash round-trips exactly through the
+base64 encode/decode.
+
+**`verify/export_ui_verify.mjs` (6 checks, real DOM):** the export page starts with the push
+button disabled and no problems solved; seeding a solved problem (via direct module import, no
+editor UI involved) enables the button; filling the form and clicking Push triggers the
+requests in the correct order (repo lookup → per-file sha checks → PUT); the resulting status
+panel shows success with no error styling and lists both pushed files by name; the entered PAT
+persists across the flow and "Forget saved token" actually clears it from `localStorage`.
+
+Re-run against the live dev server and the current working-tree code (not just trusted from a
+prior run): both scripts reported `allGreen: true`. Not yet done: a real (non-stubbed) push to
+an actual GitHub test repo — the stubbed-fetch level is what's verified so far.
 
 ## Notes
 
