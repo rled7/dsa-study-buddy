@@ -5782,7 +5782,310 @@ const dynamicProgramming: Pattern = {
   ],
 };
 
-const greedy = stub("greedy", "Greedy", ["Activity Selection", "Interval Scheduling", "Huffman Coding"]);
+const activitySelectionProblem: Problem = {
+  id: "greedy-activity-selection",
+  title: "Activity Selection",
+  difficulty: "Medium",
+  description:
+    "Given a list of activities as [start, end] pairs, return the maximum number of non-overlapping " +
+    "activities that can be scheduled (touching endpoints, where one ends exactly when the next begins, " +
+    "don't count as overlapping).",
+  fnName: "activitySelection",
+  starterCode: "function activitySelection(activities) {\n  \n}",
+  testCases: [
+    { input: [[[1, 3], [2, 4], [3, 5]]], expected: 2 },
+    { input: [[[1, 2], [2, 3], [3, 4]]], expected: 3 },
+    { input: [[]], expected: 0 },
+    { input: [[[5, 6]]], expected: 1 },
+    { input: [[[1, 10], [2, 3], [4, 5], [6, 7]]], expected: 3 },
+  ],
+  solution:
+    "function activitySelection(activities) {\n" +
+    "  const sorted = [...activities].sort((a, b) => a[1] - b[1]);\n" +
+    "  let count = 0, lastEnd = -Infinity;\n" +
+    "  for (const [s, e] of sorted) {\n" +
+    "    if (s >= lastEnd) { count++; lastEnd = e; }\n" +
+    "  }\n" +
+    "  return count;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Greedy: sort by end time",
+      timeComplexity: "O(n log n) — dominated by the sort",
+      spaceComplexity: "O(n) for the sorted copy",
+      explanation:
+        "Always take the activity that finishes soonest among the ones still compatible with what's already " +
+        "picked — finishing early leaves the most room for everything after it, so a locally greedy choice " +
+        "turns out to be globally optimal here.",
+      code:
+        "function activitySelection(activities) {\n" +
+        "  const sorted = [...activities].sort((a, b) => a[1] - b[1]);\n" +
+        "  let count = 0, lastEnd = -Infinity;\n" +
+        "  for (const [s, e] of sorted) {\n" +
+        "    if (s >= lastEnd) { count++; lastEnd = e; }\n" +
+        "  }\n" +
+        "  return count;\n" +
+        "}",
+    },
+    {
+      approach: "Brute-force include/exclude recursion",
+      timeComplexity: "O(2ⁿ) worst case",
+      spaceComplexity: "O(n) recursion stack",
+      explanation:
+        "Try every activity as either taken or skipped and recurse, tracking the end time of the last taken " +
+        "activity. Correct because it explores every valid combination, but with no pruning or memoization " +
+        "the branching is exponential in the number of activities.",
+      code:
+        "function activitySelection(activities) {\n" +
+        "  const sorted = [...activities].sort((a, b) => a[0] - b[0]);\n" +
+        "  function helper(i, lastEnd) {\n" +
+        "    if (i === sorted.length) return 0;\n" +
+        "    const skip = helper(i + 1, lastEnd);\n" +
+        "    let take = 0;\n" +
+        "    if (sorted[i][0] >= lastEnd) take = 1 + helper(i + 1, sorted[i][1]);\n" +
+        "    return Math.max(skip, take);\n" +
+        "  }\n" +
+        "  return helper(0, -Infinity);\n" +
+        "}",
+    },
+  ],
+};
+
+const minMeetingRoomsProblem: Problem = {
+  id: "greedy-min-meeting-rooms",
+  title: "Meeting Rooms II",
+  difficulty: "Medium",
+  description:
+    "Given meeting time intervals as [start, end] pairs, return the minimum number of conference rooms " +
+    "required so that no two overlapping meetings share a room.",
+  fnName: "minMeetingRooms",
+  starterCode: "function minMeetingRooms(intervals) {\n  \n}",
+  testCases: [
+    { input: [[[0, 30], [5, 10], [15, 20]]], expected: 2 },
+    { input: [[[7, 10], [2, 4]]], expected: 1 },
+    { input: [[]], expected: 0 },
+    { input: [[[1, 5], [1, 5], [1, 5]]], expected: 3 },
+    { input: [[[1, 10], [2, 3], [4, 5], [6, 7]]], expected: 2 },
+  ],
+  solution:
+    "function minMeetingRooms(intervals) {\n" +
+    "  if (!intervals.length) return 0;\n" +
+    "  const starts = intervals.map((i) => i[0]).sort((a, b) => a - b);\n" +
+    "  const ends = intervals.map((i) => i[1]).sort((a, b) => a - b);\n" +
+    "  let rooms = 0, maxRooms = 0;\n" +
+    "  let s = 0, e = 0;\n" +
+    "  while (s < starts.length) {\n" +
+    "    if (starts[s] < ends[e]) { rooms++; s++; } else { rooms--; e++; }\n" +
+    "    maxRooms = Math.max(maxRooms, rooms);\n" +
+    "  }\n" +
+    "  return maxRooms;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Two-pointer sweep over sorted starts/ends",
+      timeComplexity: "O(n log n) — dominated by the two sorts",
+      spaceComplexity: "O(n) for the sorted copies",
+      explanation:
+        "Sort start times and end times separately, then sweep through the timeline: every start needs a new " +
+        "room unless an earlier meeting has already ended by that point. The running count's peak is the " +
+        "answer — greedily reusing the earliest-freed room never costs anything.",
+      code:
+        "function minMeetingRooms(intervals) {\n" +
+        "  if (!intervals.length) return 0;\n" +
+        "  const starts = intervals.map((i) => i[0]).sort((a, b) => a - b);\n" +
+        "  const ends = intervals.map((i) => i[1]).sort((a, b) => a - b);\n" +
+        "  let rooms = 0, maxRooms = 0;\n" +
+        "  let s = 0, e = 0;\n" +
+        "  while (s < starts.length) {\n" +
+        "    if (starts[s] < ends[e]) { rooms++; s++; } else { rooms--; e++; }\n" +
+        "    maxRooms = Math.max(maxRooms, rooms);\n" +
+        "  }\n" +
+        "  return maxRooms;\n" +
+        "}",
+    },
+    {
+      approach: "Room-assignment simulation",
+      timeComplexity: "O(n²) worst case — scans existing rooms for each meeting",
+      spaceComplexity: "O(n) for the room end-time list",
+      explanation:
+        "Process meetings in start order and assign each one to the first room whose current meeting has " +
+        "already ended, opening a new room only if none are free. Correct, but checking every existing room " +
+        "for each new meeting is quadratic instead of the sweep's linear-after-sorting pass.",
+      code:
+        "function minMeetingRooms(intervals) {\n" +
+        "  if (!intervals.length) return 0;\n" +
+        "  const sorted = [...intervals].sort((a, b) => a[0] - b[0]);\n" +
+        "  const roomEndTimes = [];\n" +
+        "  for (const [s, e] of sorted) {\n" +
+        "    let assigned = false;\n" +
+        "    for (let i = 0; i < roomEndTimes.length; i++) {\n" +
+        "      if (roomEndTimes[i] <= s) { roomEndTimes[i] = e; assigned = true; break; }\n" +
+        "    }\n" +
+        "    if (!assigned) roomEndTimes.push(e);\n" +
+        "  }\n" +
+        "  return roomEndTimes.length;\n" +
+        "}",
+    },
+  ],
+};
+
+const huffmanCostProblem: Problem = {
+  id: "greedy-huffman-coding",
+  title: "Huffman Coding: Minimum Merge Cost",
+  difficulty: "Medium",
+  description:
+    "Given the frequencies of a set of symbols, repeatedly merge the two least-frequent piles (cost = their " +
+    "sum) until one pile remains, and return the total cost of all merges — this is the weighted path length " +
+    "Huffman coding minimizes to build an optimal prefix code.",
+  fnName: "huffmanCost",
+  starterCode: "function huffmanCost(freqs) {\n  \n}",
+  testCases: [
+    { input: [[5, 9, 12, 13, 16, 45]], expected: 224 },
+    { input: [[1, 2, 3]], expected: 9 },
+    { input: [[]], expected: 0 },
+    { input: [[7]], expected: 0 },
+    { input: [[4, 4]], expected: 8 },
+  ],
+  solution:
+    "function huffmanCost(freqs) {\n" +
+    "  if (freqs.length <= 1) return 0;\n" +
+    "  const heap = [...freqs];\n" +
+    "  function siftUp(i) {\n" +
+    "    while (i > 0) { const p = (i - 1) >> 1; if (heap[p] <= heap[i]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }\n" +
+    "  }\n" +
+    "  function siftDown(i) {\n" +
+    "    const n = heap.length;\n" +
+    "    while (true) {\n" +
+    "      let smallest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+    "      if (l < n && heap[l] < heap[smallest]) smallest = l;\n" +
+    "      if (r < n && heap[r] < heap[smallest]) smallest = r;\n" +
+    "      if (smallest === i) break;\n" +
+    "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]]; i = smallest;\n" +
+    "    }\n" +
+    "  }\n" +
+    "  for (let i = Math.floor(heap.length / 2) - 1; i >= 0; i--) siftDown(i);\n" +
+    "  function extractMin() {\n" +
+    "    const min = heap[0];\n" +
+    "    const last = heap.pop();\n" +
+    "    if (heap.length) { heap[0] = last; siftDown(0); }\n" +
+    "    return min;\n" +
+    "  }\n" +
+    "  function insert(v) { heap.push(v); siftUp(heap.length - 1); }\n" +
+    "  let totalCost = 0;\n" +
+    "  while (heap.length > 1) {\n" +
+    "    const a = extractMin();\n" +
+    "    const b = extractMin();\n" +
+    "    const combined = a + b;\n" +
+    "    totalCost += combined;\n" +
+    "    insert(combined);\n" +
+    "  }\n" +
+    "  return totalCost;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Min-heap greedy merge",
+      timeComplexity: "O(n log n)",
+      spaceComplexity: "O(n) for the heap",
+      explanation:
+        "Always merge the two smallest piles next — that's exactly the greedy choice Huffman's algorithm " +
+        "makes, and it's provably optimal because any pile merged later (deeper in the resulting tree) should " +
+        "be as small as possible. A binary heap keeps 'find the two smallest' cheap after every merge.",
+      code:
+        "function huffmanCost(freqs) {\n" +
+        "  if (freqs.length <= 1) return 0;\n" +
+        "  const heap = [...freqs];\n" +
+        "  function siftUp(i) {\n" +
+        "    while (i > 0) { const p = (i - 1) >> 1; if (heap[p] <= heap[i]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }\n" +
+        "  }\n" +
+        "  function siftDown(i) {\n" +
+        "    const n = heap.length;\n" +
+        "    while (true) {\n" +
+        "      let smallest = i; const l = 2 * i + 1, r = 2 * i + 2;\n" +
+        "      if (l < n && heap[l] < heap[smallest]) smallest = l;\n" +
+        "      if (r < n && heap[r] < heap[smallest]) smallest = r;\n" +
+        "      if (smallest === i) break;\n" +
+        "      [heap[smallest], heap[i]] = [heap[i], heap[smallest]]; i = smallest;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  for (let i = Math.floor(heap.length / 2) - 1; i >= 0; i--) siftDown(i);\n" +
+        "  function extractMin() {\n" +
+        "    const min = heap[0];\n" +
+        "    const last = heap.pop();\n" +
+        "    if (heap.length) { heap[0] = last; siftDown(0); }\n" +
+        "    return min;\n" +
+        "  }\n" +
+        "  function insert(v) { heap.push(v); siftUp(heap.length - 1); }\n" +
+        "  let totalCost = 0;\n" +
+        "  while (heap.length > 1) {\n" +
+        "    const a = extractMin();\n" +
+        "    const b = extractMin();\n" +
+        "    const combined = a + b;\n" +
+        "    totalCost += combined;\n" +
+        "    insert(combined);\n" +
+        "  }\n" +
+        "  return totalCost;\n" +
+        "}",
+    },
+    {
+      approach: "Linear-scan merge (no heap)",
+      timeComplexity: "O(n²) — a full scan to find each of the two smallest piles per merge",
+      spaceComplexity: "O(n) for the working array",
+      explanation:
+        "Same greedy merge-the-two-smallest strategy, but finds each smallest pile with a plain linear scan " +
+        "over the remaining array instead of a heap — correct, just slower to repeatedly locate the minimum " +
+        "as merges accumulate.",
+      code:
+        "function huffmanCost(freqs) {\n" +
+        "  const arr = [...freqs];\n" +
+        "  if (arr.length <= 1) return 0;\n" +
+        "  let totalCost = 0;\n" +
+        "  while (arr.length > 1) {\n" +
+        "    let i1 = 0;\n" +
+        "    for (let i = 1; i < arr.length; i++) if (arr[i] < arr[i1]) i1 = i;\n" +
+        "    const v1 = arr.splice(i1, 1)[0];\n" +
+        "    let i2 = 0;\n" +
+        "    for (let i = 1; i < arr.length; i++) if (arr[i] < arr[i2]) i2 = i;\n" +
+        "    const v2 = arr.splice(i2, 1)[0];\n" +
+        "    const combined = v1 + v2;\n" +
+        "    totalCost += combined;\n" +
+        "    arr.push(combined);\n" +
+        "  }\n" +
+        "  return totalCost;\n" +
+        "}",
+    },
+  ],
+};
+
+const greedy: Pattern = {
+  id: "greedy",
+  name: "Greedy",
+  subpatterns: [
+    {
+      id: "greedy-activity-selection",
+      name: "Activity Selection",
+      explanation:
+        "Picking the maximum set of non-overlapping activities. Sorting by finish time and always taking the " +
+        "next compatible earliest-finishing activity is a textbook proof-by-exchange-argument greedy.",
+      problems: [activitySelectionProblem],
+    },
+    {
+      id: "greedy-interval-scheduling",
+      name: "Interval Scheduling",
+      explanation:
+        "A broader family of interval problems — here, how many resources (rooms) are needed to host every " +
+        "interval at once. A sweep over sorted start/end boundaries greedily tracks concurrent demand.",
+      problems: [minMeetingRoomsProblem],
+    },
+    {
+      id: "greedy-huffman-coding",
+      name: "Huffman Coding",
+      explanation:
+        "Building an optimal prefix code by always combining the two least-frequent symbols first — the " +
+        "canonical example of a greedy algorithm with a formal optimality proof, implemented with a min-heap.",
+      problems: [huffmanCostProblem],
+    },
+  ],
+};
 
 const bitManipulation = stub("bit-manipulation", "Bit Manipulation", [
   "Basic Ops",
