@@ -5103,7 +5103,297 @@ const graphs: Pattern = {
   ],
 };
 
-const trie = stub("trie", "Trie", ["Insert/Search", "Prefix Problems", "Word Break"]);
+const trieOperationsProblem: Problem = {
+  id: "trie-design-trie",
+  title: "Design a Trie (Prefix Tree)",
+  difficulty: "Medium",
+  description:
+    "Design a trie supporting insert, search (exact word match), and startsWith (prefix match), exercised " +
+    "via a sequence of operations. ops[i] is one of \"insert\", \"search\", \"startsWith\"; argsList[i] holds " +
+    "that operation's single-word argument. insert returns null; search/startsWith return a boolean.",
+  fnName: "trieOperations",
+  starterCode: "function trieOperations(ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [
+        ["insert", "search", "search", "startsWith", "insert", "search", "startsWith"],
+        [["apple"], ["apple"], ["app"], ["app"], ["app"], ["app"], [""]],
+      ],
+      expected: [null, true, false, true, null, true, true],
+    },
+    {
+      input: [["search", "startsWith"], [["cat"], ["c"]]],
+      expected: [false, false],
+    },
+  ],
+  solution:
+    "function trieOperations(ops, argsList) {\n" +
+    "  const root = {};\n" +
+    "  const out = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], a = argsList[i];\n" +
+    "    if (op === 'insert') {\n" +
+    "      let node = root;\n" +
+    "      for (const ch of a[0]) { if (!node[ch]) node[ch] = {}; node = node[ch]; }\n" +
+    "      node.isEnd = true;\n" +
+    "      out.push(null);\n" +
+    "    } else if (op === 'search') {\n" +
+    "      let node = root;\n" +
+    "      for (const ch of a[0]) { if (!node[ch]) { node = null; break; } node = node[ch]; }\n" +
+    "      out.push(!!(node && node.isEnd));\n" +
+    "    } else if (op === 'startsWith') {\n" +
+    "      let node = root;\n" +
+    "      for (const ch of a[0]) { if (!node[ch]) { node = null; break; } node = node[ch]; }\n" +
+    "      out.push(!!node);\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return out;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Real trie (nested character nodes)",
+      timeComplexity: "O(m) per operation (m = word length)",
+      spaceComplexity: "O(total characters inserted)",
+      explanation:
+        "Each node is a plain object keyed by the next character, with a boolean marking word ends. Insert " +
+        "and lookups both just walk one character at a time from the root — no scanning of other words needed.",
+      code:
+        "function trieOperations(ops, argsList) {\n" +
+        "  const root = {};\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'insert') {\n" +
+        "      let node = root;\n" +
+        "      for (const ch of a[0]) { if (!node[ch]) node[ch] = {}; node = node[ch]; }\n" +
+        "      node.isEnd = true;\n" +
+        "      out.push(null);\n" +
+        "    } else if (op === 'search') {\n" +
+        "      let node = root;\n" +
+        "      for (const ch of a[0]) { if (!node[ch]) { node = null; break; } node = node[ch]; }\n" +
+        "      out.push(!!(node && node.isEnd));\n" +
+        "    } else if (op === 'startsWith') {\n" +
+        "      let node = root;\n" +
+        "      for (const ch of a[0]) { if (!node[ch]) { node = null; break; } node = node[ch]; }\n" +
+        "      out.push(!!node);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+    {
+      approach: "Flat word list (brute force)",
+      timeComplexity: "O(n · m) per search/startsWith (n = words stored, m = word length)",
+      spaceComplexity: "O(total characters inserted)",
+      explanation:
+        "Just push every inserted word into an array. search checks for an exact match anywhere in the " +
+        "array; startsWith checks whether any stored word begins with the query — both have to look at every " +
+        "stored word in the worst case, unlike the trie's direct character-path walk.",
+      code:
+        "function trieOperations(ops, argsList) {\n" +
+        "  const words = [];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'insert') { words.push(a[0]); out.push(null); }\n" +
+        "    else if (op === 'search') { out.push(words.includes(a[0])); }\n" +
+        "    else if (op === 'startsWith') { out.push(words.some((w) => w.startsWith(a[0]))); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+  ],
+};
+
+const longestCommonPrefixProblem: Problem = {
+  id: "trie-longest-common-prefix",
+  title: "Longest Common Prefix",
+  difficulty: "Easy",
+  description:
+    "Given an array of strings, return the longest prefix common to all of them, or an empty string if there " +
+    "isn't one.",
+  fnName: "longestCommonPrefix",
+  starterCode: "function longestCommonPrefix(strs) {\n  \n}",
+  testCases: [
+    { input: [["flower", "flow", "flight"]], expected: "fl" },
+    { input: [["dog", "racecar", "car"]], expected: "" },
+    { input: [["a"]], expected: "a" },
+    { input: [[]], expected: "" },
+    { input: [["ab", "a"]], expected: "a" },
+  ],
+  solution:
+    "function longestCommonPrefix(strs) {\n" +
+    "  if (!strs.length) return '';\n" +
+    "  let prefix = strs[0];\n" +
+    "  for (let i = 1; i < strs.length; i++) {\n" +
+    "    while (!strs[i].startsWith(prefix)) {\n" +
+    "      prefix = prefix.slice(0, -1);\n" +
+    "      if (!prefix) return '';\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return prefix;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Shrink-to-fit scanning",
+      timeComplexity: "O(S) (S = total characters across all strings)",
+      spaceComplexity: "O(1) extra",
+      explanation:
+        "Start assuming the whole first string is the common prefix, then shrink it one character at a time " +
+        "until every remaining string actually starts with it. Each character is trimmed at most once overall.",
+      code:
+        "function longestCommonPrefix(strs) {\n" +
+        "  if (!strs.length) return '';\n" +
+        "  let prefix = strs[0];\n" +
+        "  for (let i = 1; i < strs.length; i++) {\n" +
+        "    while (!strs[i].startsWith(prefix)) {\n" +
+        "      prefix = prefix.slice(0, -1);\n" +
+        "      if (!prefix) return '';\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return prefix;\n" +
+        "}",
+    },
+    {
+      approach: "Trie-based common-prefix walk",
+      timeComplexity: "O(S) (S = total characters across all strings)",
+      spaceComplexity: "O(S) — builds a full trie of every string first",
+      explanation:
+        "Insert every string into a trie, with each node tracking how many inserted strings pass through it. " +
+        "Walk down from the root while there's exactly one child and that child's count equals the total " +
+        "string count — the moment either fails, the shared prefix has ended.",
+      code:
+        "function longestCommonPrefix(strs) {\n" +
+        "  if (!strs.length) return '';\n" +
+        "  const root = { children: new Map(), count: strs.length };\n" +
+        "  for (const s of strs) {\n" +
+        "    let node = root;\n" +
+        "    for (const ch of s) {\n" +
+        "      if (!node.children.has(ch)) node.children.set(ch, { children: new Map(), count: 0 });\n" +
+        "      node = node.children.get(ch);\n" +
+        "      node.count++;\n" +
+        "    }\n" +
+        "  }\n" +
+        "  let prefix = '';\n" +
+        "  let node = root;\n" +
+        "  while (node.children.size === 1) {\n" +
+        "    const [ch, child] = [...node.children.entries()][0];\n" +
+        "    if (child.count !== strs.length) break;\n" +
+        "    prefix += ch;\n" +
+        "    node = child;\n" +
+        "  }\n" +
+        "  return prefix;\n" +
+        "}",
+    },
+  ],
+};
+
+const wordBreakProblem: Problem = {
+  id: "trie-word-break",
+  title: "Word Break",
+  difficulty: "Medium",
+  description:
+    "Given a string s and an array of dictionary words wordDict, return whether s can be segmented into a " +
+    "space-separated sequence of one or more dictionary words (words may be reused any number of times).",
+  fnName: "wordBreak",
+  starterCode: "function wordBreak(s, wordDict) {\n  \n}",
+  testCases: [
+    { input: ["leetcode", ["leet", "code"]], expected: true },
+    { input: ["applepenapple", ["apple", "pen"]], expected: true },
+    { input: ["catsandog", ["cats", "dog", "sand", "and", "cat"]], expected: false },
+    { input: ["a", ["b"]], expected: false },
+    { input: ["", []], expected: true },
+  ],
+  solution:
+    "function wordBreak(s, wordDict) {\n" +
+    "  const words = new Set(wordDict);\n" +
+    "  const n = s.length;\n" +
+    "  const dp = new Array(n + 1).fill(false);\n" +
+    "  dp[0] = true;\n" +
+    "  for (let i = 1; i <= n; i++) {\n" +
+    "    for (let j = 0; j < i; j++) {\n" +
+    "      if (dp[j] && words.has(s.slice(j, i))) { dp[i] = true; break; }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return dp[n];\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Dynamic programming",
+      timeComplexity: "O(n³) worst case (O(n²) substring endpoints, each an O(n) slice)",
+      spaceComplexity: "O(n) — the dp array plus the word set",
+      explanation:
+        "dp[i] means 's up to index i can be segmented'. It's true if some earlier split point j has dp[j] " +
+        "true and the piece between j and i is a dictionary word — every split point is tried once, and " +
+        "results are never recomputed.",
+      code:
+        "function wordBreak(s, wordDict) {\n" +
+        "  const words = new Set(wordDict);\n" +
+        "  const n = s.length;\n" +
+        "  const dp = new Array(n + 1).fill(false);\n" +
+        "  dp[0] = true;\n" +
+        "  for (let i = 1; i <= n; i++) {\n" +
+        "    for (let j = 0; j < i; j++) {\n" +
+        "      if (dp[j] && words.has(s.slice(j, i))) { dp[i] = true; break; }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return dp[n];\n" +
+        "}",
+    },
+    {
+      approach: "Naive recursive backtracking (no memoization)",
+      timeComplexity: "O(2ⁿ) worst case",
+      spaceComplexity: "O(n) recursion stack",
+      explanation:
+        "Try every dictionary word as the next piece from the current position and recurse. Correct, but " +
+        "with no memo the same starting position gets re-explored from scratch by every path that reaches it, " +
+        "and the number of paths grows exponentially with the string length.",
+      code:
+        "function wordBreak(s, wordDict) {\n" +
+        "  const words = new Set(wordDict);\n" +
+        "  function helper(start) {\n" +
+        "    if (start === s.length) return true;\n" +
+        "    for (let end = start + 1; end <= s.length; end++) {\n" +
+        "      if (words.has(s.slice(start, end)) && helper(end)) return true;\n" +
+        "    }\n" +
+        "    return false;\n" +
+        "  }\n" +
+        "  return helper(0);\n" +
+        "}",
+    },
+  ],
+};
+
+const trie: Pattern = {
+  id: "trie",
+  name: "Trie",
+  subpatterns: [
+    {
+      id: "trie-insert-search",
+      name: "Insert/Search",
+      explanation:
+        "A trie stores strings character by character along shared paths from the root, so every word with " +
+        "the same prefix reuses the same nodes — insert, search, and prefix checks all cost just O(word length).",
+      problems: [trieOperationsProblem],
+    },
+    {
+      id: "trie-prefix-problems",
+      name: "Prefix Problems",
+      explanation:
+        "Any question about what strings share in common at the start is really a question about how far " +
+        "down a shared trie path goes before branching.",
+      problems: [longestCommonPrefixProblem],
+    },
+    {
+      id: "trie-word-break",
+      name: "Word Break",
+      explanation:
+        "Segmenting a string into dictionary words is a search over split points — a trie (or a hash set, for " +
+        "smaller dictionaries) makes checking 'is this piece a word' fast at every candidate split.",
+      problems: [wordBreakProblem],
+    },
+  ],
+};
 
 const dynamicProgramming = stub("dynamic-programming", "Dynamic Programming", [
   "1D",
