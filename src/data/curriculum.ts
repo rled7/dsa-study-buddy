@@ -2643,21 +2643,6 @@ const systemDesign: Pattern = {
   ],
 };
 
-// ─── Remaining 12 patterns — structure only, seeded content coming soon ───
-
-function stub(id: string, name: string, subpatternNames: string[]): Pattern {
-  return {
-    id,
-    name,
-    subpatterns: subpatternNames.map((n) => ({
-      id: `${id}-${n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}`,
-      name: n,
-      explanation: `Problems coming soon. "${n}" is part of the ${name} pattern family.`,
-      problems: [],
-    })),
-  };
-}
-
 const maxSlidingWindowProblem: Problem = {
   id: "queue-deque-max-sliding-window",
   title: "Sliding Window Maximum",
@@ -6624,11 +6609,314 @@ const advanced: Pattern = {
   ],
 };
 
-const rangeStructures = stub("range-structures", "Range Structures", [
-  "Prefix Sum",
-  "Segment Tree",
-  "Fenwick Tree/BIT",
-]);
+const rangeSumQueriesProblem: Problem = {
+  id: "range-structures-range-sum-immutable",
+  title: "Range Sum Query - Immutable",
+  difficulty: "Easy",
+  description:
+    "Given a fixed array of integers and a list of [left, right] range queries, return the sum of each " +
+    "range (inclusive) — the array itself never changes between queries.",
+  fnName: "rangeSumQueries",
+  starterCode: "function rangeSumQueries(nums, queries) {\n  \n}",
+  testCases: [
+    { input: [[-2, 0, 3, -5, 2, -1], [[0, 2], [2, 5], [0, 5]]], expected: [1, -1, -3] },
+    { input: [[1], [[0, 0]]], expected: [1] },
+    { input: [[1, 2, 3, 4, 5], [[1, 3]]], expected: [9] },
+    { input: [[], []], expected: [] },
+    { input: [[5, 5, 5], [[0, 0], [1, 1], [0, 2]]], expected: [5, 5, 15] },
+  ],
+  solution:
+    "function rangeSumQueries(nums, queries) {\n" +
+    "  const prefix = [0];\n" +
+    "  for (const n of nums) prefix.push(prefix[prefix.length - 1] + n);\n" +
+    "  return queries.map(([l, r]) => prefix[r + 1] - prefix[l]);\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Precomputed prefix sums",
+      timeComplexity: "O(n) to build, O(1) per query",
+      spaceComplexity: "O(n) for the prefix array",
+      explanation:
+        "Build one running-total array up front where prefix[i] is the sum of everything before index i. Any " +
+        "range sum is then just a subtraction of two prefix values — the array never changes, so this upfront " +
+        "cost is paid exactly once no matter how many queries follow.",
+      code:
+        "function rangeSumQueries(nums, queries) {\n" +
+        "  const prefix = [0];\n" +
+        "  for (const n of nums) prefix.push(prefix[prefix.length - 1] + n);\n" +
+        "  return queries.map(([l, r]) => prefix[r + 1] - prefix[l]);\n" +
+        "}",
+    },
+    {
+      approach: "Direct summation per query",
+      timeComplexity: "O(n) per query",
+      spaceComplexity: "O(1) extra per query",
+      explanation:
+        "Just add up the elements in each requested range on the spot. No setup cost, but every query walks " +
+        "the whole range again from scratch — for many queries over the same static array, that's far more " +
+        "total work than paying once for prefix sums.",
+      code:
+        "function rangeSumQueries(nums, queries) {\n" +
+        "  return queries.map(([l, r]) => {\n" +
+        "    let sum = 0;\n" +
+        "    for (let i = l; i <= r; i++) sum += nums[i];\n" +
+        "    return sum;\n" +
+        "  });\n" +
+        "}",
+    },
+  ],
+};
+
+const segmentTreeOperationsProblem: Problem = {
+  id: "range-structures-segment-tree",
+  title: "Range Sum Query - Mutable (Segment Tree)",
+  difficulty: "Medium",
+  description:
+    "Given an initial array and a sequence of operations, support two kinds: [\"update\", index, value] sets " +
+    "nums[index] to value, and [\"query\", left, right] returns the sum of nums[left..right] inclusive at " +
+    "that point in time. Return the results in order (null for update operations).",
+  fnName: "segmentTreeOperations",
+  starterCode: "function segmentTreeOperations(nums, ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    {
+      input: [[1, 3, 5], ["query", "update", "query"], [[0, 2], [1, 2], [0, 2]]],
+      expected: [9, null, 8],
+    },
+    { input: [[7], ["query"], [[0, 0]]], expected: [7] },
+    {
+      input: [
+        [1, 1, 1, 1],
+        ["query", "update", "update", "query"],
+        [[0, 3], [0, 5], [3, -1], [0, 3]],
+      ],
+      expected: [4, null, null, 6],
+    },
+    { input: [[2, 4, 6, 8, 10], ["query", "query"], [[1, 3], [0, 4]]], expected: [18, 30] },
+  ],
+  solution:
+    "function segmentTreeOperations(nums, ops, argsList) {\n" +
+    "  const n = nums.length;\n" +
+    "  const tree = new Array(2 * n).fill(0);\n" +
+    "  for (let i = 0; i < n; i++) tree[n + i] = nums[i];\n" +
+    "  for (let i = n - 1; i > 0; i--) tree[i] = tree[2 * i] + tree[2 * i + 1];\n" +
+    "  function update(index, val) {\n" +
+    "    let i = index + n;\n" +
+    "    tree[i] = val;\n" +
+    "    while (i > 1) { i = i >> 1; tree[i] = tree[2 * i] + tree[2 * i + 1]; }\n" +
+    "  }\n" +
+    "  function query(left, right) {\n" +
+    "    let l = left + n, r = right + n + 1;\n" +
+    "    let sum = 0;\n" +
+    "    while (l < r) {\n" +
+    "      if (l & 1) { sum += tree[l]; l++; }\n" +
+    "      if (r & 1) { r--; sum += tree[r]; }\n" +
+    "      l >>= 1; r >>= 1;\n" +
+    "    }\n" +
+    "    return sum;\n" +
+    "  }\n" +
+    "  const out = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], a = argsList[i];\n" +
+    "    if (op === 'update') { update(a[0], a[1]); out.push(null); }\n" +
+    "    else if (op === 'query') { out.push(query(a[0], a[1])); }\n" +
+    "  }\n" +
+    "  return out;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Iterative bottom-up segment tree",
+      timeComplexity: "O(log n) per update or query, O(n) to build",
+      spaceComplexity: "O(n) for the tree array",
+      explanation:
+        "Store the array as the tree's leaves (indices n..2n-1) and every internal node as the sum of its two " +
+        "children. Updating a leaf only needs to recompute the O(log n) ancestors above it; querying a range " +
+        "walks up from both ends, combining O(log n) precomputed subtree sums instead of every element.",
+      code:
+        "function segmentTreeOperations(nums, ops, argsList) {\n" +
+        "  const n = nums.length;\n" +
+        "  const tree = new Array(2 * n).fill(0);\n" +
+        "  for (let i = 0; i < n; i++) tree[n + i] = nums[i];\n" +
+        "  for (let i = n - 1; i > 0; i--) tree[i] = tree[2 * i] + tree[2 * i + 1];\n" +
+        "  function update(index, val) {\n" +
+        "    let i = index + n;\n" +
+        "    tree[i] = val;\n" +
+        "    while (i > 1) { i = i >> 1; tree[i] = tree[2 * i] + tree[2 * i + 1]; }\n" +
+        "  }\n" +
+        "  function query(left, right) {\n" +
+        "    let l = left + n, r = right + n + 1;\n" +
+        "    let sum = 0;\n" +
+        "    while (l < r) {\n" +
+        "      if (l & 1) { sum += tree[l]; l++; }\n" +
+        "      if (r & 1) { r--; sum += tree[r]; }\n" +
+        "      l >>= 1; r >>= 1;\n" +
+        "    }\n" +
+        "    return sum;\n" +
+        "  }\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'update') { update(a[0], a[1]); out.push(null); }\n" +
+        "    else if (op === 'query') { out.push(query(a[0], a[1])); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+    {
+      approach: "Plain array, recomputed per query",
+      timeComplexity: "O(1) per update, O(n) per query",
+      spaceComplexity: "O(n) for the array",
+      explanation:
+        "Just mutate the array directly on update, and sum the requested range from scratch on every query. " +
+        "Updates are cheaper than the segment tree's O(log n), but each query pays for the whole range every " +
+        "time — worse when queries are frequent relative to updates.",
+      code:
+        "function segmentTreeOperations(nums, ops, argsList) {\n" +
+        "  const arr = [...nums];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'update') { arr[a[0]] = a[1]; out.push(null); }\n" +
+        "    else if (op === 'query') {\n" +
+        "      let sum = 0;\n" +
+        "      for (let j = a[0]; j <= a[1]; j++) sum += arr[j];\n" +
+        "      out.push(sum);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+  ],
+};
+
+const fenwickOperationsProblem: Problem = {
+  id: "range-structures-fenwick-tree",
+  title: "Point Update, Prefix Sum (Fenwick Tree / BIT)",
+  difficulty: "Medium",
+  description:
+    "Given an initial array and a sequence of operations, support two kinds: [\"add\", index, delta] adds " +
+    "delta to nums[index], and [\"prefixSum\", index] returns the sum of nums[0..index] inclusive at that " +
+    "point in time. Return the results in order (null for add operations).",
+  fnName: "fenwickOperations",
+  starterCode: "function fenwickOperations(nums, ops, argsList) {\n  // your code here\n}",
+  testCases: [
+    { input: [[1, 3, 5], ["prefixSum", "add", "prefixSum"], [[2], [1, 4], [2]]], expected: [9, null, 13] },
+    { input: [[7], ["prefixSum"], [[0]]], expected: [7] },
+    { input: [[1, 1, 1, 1], ["prefixSum", "add", "prefixSum"], [[3], [0, 5], [3]]], expected: [4, null, 9] },
+    { input: [[2, 4, 6, 8, 10], ["prefixSum", "prefixSum"], [[1], [4]]], expected: [6, 30] },
+  ],
+  solution:
+    "function fenwickOperations(nums, ops, argsList) {\n" +
+    "  const n = nums.length;\n" +
+    "  const tree = new Array(n + 1).fill(0);\n" +
+    "  function add(index, delta) {\n" +
+    "    for (let i = index + 1; i <= n; i += i & -i) tree[i] += delta;\n" +
+    "  }\n" +
+    "  function prefixSum(index) {\n" +
+    "    let sum = 0;\n" +
+    "    for (let i = index + 1; i > 0; i -= i & -i) sum += tree[i];\n" +
+    "    return sum;\n" +
+    "  }\n" +
+    "  for (let i = 0; i < n; i++) add(i, nums[i]);\n" +
+    "  const out = [];\n" +
+    "  for (let i = 0; i < ops.length; i++) {\n" +
+    "    const op = ops[i], a = argsList[i];\n" +
+    "    if (op === 'add') { add(a[0], a[1]); out.push(null); }\n" +
+    "    else if (op === 'prefixSum') { out.push(prefixSum(a[0])); }\n" +
+    "  }\n" +
+    "  return out;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Binary Indexed Tree (Fenwick tree)",
+      timeComplexity: "O(log n) per add or prefixSum, O(n log n) to build",
+      spaceComplexity: "O(n) for the tree array",
+      explanation:
+        "Each index in the tree array stores a partial sum covering a range determined by its lowest set bit " +
+        "(i & -i). Adding a delta only touches the O(log n) indices whose ranges include it; a prefix sum " +
+        "accumulates the O(log n) partial ranges that together cover 0..index — both directions exploit the " +
+        "same bit trick.",
+      code:
+        "function fenwickOperations(nums, ops, argsList) {\n" +
+        "  const n = nums.length;\n" +
+        "  const tree = new Array(n + 1).fill(0);\n" +
+        "  function add(index, delta) {\n" +
+        "    for (let i = index + 1; i <= n; i += i & -i) tree[i] += delta;\n" +
+        "  }\n" +
+        "  function prefixSum(index) {\n" +
+        "    let sum = 0;\n" +
+        "    for (let i = index + 1; i > 0; i -= i & -i) sum += tree[i];\n" +
+        "    return sum;\n" +
+        "  }\n" +
+        "  for (let i = 0; i < n; i++) add(i, nums[i]);\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'add') { add(a[0], a[1]); out.push(null); }\n" +
+        "    else if (op === 'prefixSum') { out.push(prefixSum(a[0])); }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+    {
+      approach: "Plain array, recomputed per query",
+      timeComplexity: "O(1) per add, O(n) per prefixSum",
+      spaceComplexity: "O(n) for the array",
+      explanation:
+        "Mutate the array directly on add, and sum from the start on every prefixSum query. Cheaper updates " +
+        "than the Fenwick tree's O(log n), but each query re-walks the whole prefix instead of combining a " +
+        "handful of precomputed partial sums.",
+      code:
+        "function fenwickOperations(nums, ops, argsList) {\n" +
+        "  const arr = [...nums];\n" +
+        "  const out = [];\n" +
+        "  for (let i = 0; i < ops.length; i++) {\n" +
+        "    const op = ops[i], a = argsList[i];\n" +
+        "    if (op === 'add') { arr[a[0]] += a[1]; out.push(null); }\n" +
+        "    else if (op === 'prefixSum') {\n" +
+        "      let sum = 0;\n" +
+        "      for (let j = 0; j <= a[0]; j++) sum += arr[j];\n" +
+        "      out.push(sum);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return out;\n" +
+        "}",
+    },
+  ],
+};
+
+const rangeStructures: Pattern = {
+  id: "range-structures",
+  name: "Range Structures",
+  subpatterns: [
+    {
+      id: "range-structures-prefix-sum",
+      name: "Prefix Sum",
+      explanation:
+        "When the underlying array never changes, precompute a running-total array once so any range sum " +
+        "becomes a single subtraction — the simplest and cheapest range structure, but it breaks the moment " +
+        "the array needs to change.",
+      problems: [rangeSumQueriesProblem],
+    },
+    {
+      id: "range-structures-segment-tree",
+      name: "Segment Tree",
+      explanation:
+        "A binary tree over the array where each node caches the combined result of its range lets both " +
+        "point updates and range queries run in O(log n) — the general-purpose range structure when the array " +
+        "needs to change and any range-combinable operation (sum, min, max, gcd...) is fair game.",
+      problems: [segmentTreeOperationsProblem],
+    },
+    {
+      id: "range-structures-fenwick-tree-bit",
+      name: "Fenwick Tree/BIT",
+      explanation:
+        "A more compact alternative to a segment tree for prefix-sum-style queries: indices encode ranges via " +
+        "their lowest set bit, giving O(log n) point updates and prefix queries with a much smaller constant " +
+        "factor and less code than a full segment tree.",
+      problems: [fenwickOperationsProblem],
+    },
+  ],
+};
 
 // ─── Full 17-pattern curriculum ───────────────────────────────────────────
 
