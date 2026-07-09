@@ -5395,12 +5395,392 @@ const trie: Pattern = {
   ],
 };
 
-const dynamicProgramming = stub("dynamic-programming", "Dynamic Programming", [
-  "1D",
-  "2D",
-  "Knapsack",
-  "DP on Trees",
-]);
+const robProblem: Problem = {
+  id: "dp-house-robber",
+  title: "House Robber",
+  difficulty: "Medium",
+  description:
+    "Given an array of non-negative integers representing money stashed in houses along a street, return " +
+    "the maximum amount you can rob without robbing two adjacent houses.",
+  fnName: "rob",
+  starterCode: "function rob(nums) {\n  \n}",
+  testCases: [
+    { input: [[1, 2, 3, 1]], expected: 4 },
+    { input: [[2, 7, 9, 3, 1]], expected: 12 },
+    { input: [[]], expected: 0 },
+    { input: [[5]], expected: 5 },
+    { input: [[2, 1, 1, 2]], expected: 4 },
+  ],
+  solution:
+    "function rob(nums) {\n" +
+    "  let prev2 = 0, prev1 = 0;\n" +
+    "  for (const n of nums) {\n" +
+    "    const cur = Math.max(prev1, prev2 + n);\n" +
+    "    prev2 = prev1;\n" +
+    "    prev1 = cur;\n" +
+    "  }\n" +
+    "  return prev1;\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Bottom-up DP, O(1) space",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(1) — just two running totals",
+      explanation:
+        "At each house, the best you can do is either skip it (carry forward the best total up to the " +
+        "previous house) or rob it (its value plus the best total from two houses back). Only the last two " +
+        "running totals are ever needed, so the whole dp array collapses to two variables.",
+      code:
+        "function rob(nums) {\n" +
+        "  let prev2 = 0, prev1 = 0;\n" +
+        "  for (const n of nums) {\n" +
+        "    const cur = Math.max(prev1, prev2 + n);\n" +
+        "    prev2 = prev1;\n" +
+        "    prev1 = cur;\n" +
+        "  }\n" +
+        "  return prev1;\n" +
+        "}",
+    },
+    {
+      approach: "Naive recursion (no memoization)",
+      timeComplexity: "O(2ⁿ) worst case",
+      spaceComplexity: "O(n) recursion stack",
+      explanation:
+        "Same rob-or-skip recurrence, but computed top-down with no cache — the same house index gets " +
+        "re-explored from multiple call paths, and the redundant work doubles with every extra house.",
+      code:
+        "function rob(nums) {\n" +
+        "  function helper(i) {\n" +
+        "    if (i < 0) return 0;\n" +
+        "    if (i === 0) return nums[0];\n" +
+        "    return Math.max(helper(i - 1), helper(i - 2) + nums[i]);\n" +
+        "  }\n" +
+        "  return nums.length ? helper(nums.length - 1) : 0;\n" +
+        "}",
+    },
+  ],
+};
+
+const longestCommonSubsequenceProblem: Problem = {
+  id: "dp-longest-common-subsequence",
+  title: "Longest Common Subsequence",
+  difficulty: "Medium",
+  description:
+    "Given two strings text1 and text2, return the length of their longest common subsequence (characters " +
+    "in the same relative order, not necessarily contiguous), or 0 if they share none.",
+  fnName: "longestCommonSubsequence",
+  starterCode: "function longestCommonSubsequence(text1, text2) {\n  \n}",
+  testCases: [
+    { input: ["abcde", "ace"], expected: 3 },
+    { input: ["abc", "abc"], expected: 3 },
+    { input: ["abc", "def"], expected: 0 },
+    { input: ["", "abc"], expected: 0 },
+    { input: ["abc", ""], expected: 0 },
+  ],
+  solution:
+    "function longestCommonSubsequence(text1, text2) {\n" +
+    "  const m = text1.length, n = text2.length;\n" +
+    "  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));\n" +
+    "  for (let i = 1; i <= m; i++) {\n" +
+    "    for (let j = 1; j <= n; j++) {\n" +
+    "      if (text1[i - 1] === text2[j - 1]) dp[i][j] = dp[i - 1][j - 1] + 1;\n" +
+    "      else dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return dp[m][n];\n" +
+    "}",
+  solutions: [
+    {
+      approach: "2D dynamic programming",
+      timeComplexity: "O(m · n)",
+      spaceComplexity: "O(m · n) — the full grid",
+      explanation:
+        "dp[i][j] holds the LCS length of the first i characters of text1 and first j of text2. Matching " +
+        "characters extend the diagonal's answer by one; otherwise the best of dropping a character from " +
+        "either string carries forward — every cell is filled exactly once.",
+      code:
+        "function longestCommonSubsequence(text1, text2) {\n" +
+        "  const m = text1.length, n = text2.length;\n" +
+        "  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));\n" +
+        "  for (let i = 1; i <= m; i++) {\n" +
+        "    for (let j = 1; j <= n; j++) {\n" +
+        "      if (text1[i - 1] === text2[j - 1]) dp[i][j] = dp[i - 1][j - 1] + 1;\n" +
+        "      else dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return dp[m][n];\n" +
+        "}",
+    },
+    {
+      approach: "Naive recursion (no memoization)",
+      timeComplexity: "O(2^(m+n)) worst case",
+      spaceComplexity: "O(m + n) recursion stack",
+      explanation:
+        "Same match/skip recurrence explored top-down with no cache — the same (i, j) pair gets recomputed " +
+        "from many different call paths, so work grows exponentially with the combined string length.",
+      code:
+        "function longestCommonSubsequence(text1, text2) {\n" +
+        "  function helper(i, j) {\n" +
+        "    if (i === text1.length || j === text2.length) return 0;\n" +
+        "    if (text1[i] === text2[j]) return 1 + helper(i + 1, j + 1);\n" +
+        "    return Math.max(helper(i + 1, j), helper(i, j + 1));\n" +
+        "  }\n" +
+        "  return helper(0, 0);\n" +
+        "}",
+    },
+  ],
+};
+
+const knapsackProblem: Problem = {
+  id: "dp-knapsack",
+  title: "0/1 Knapsack",
+  difficulty: "Medium",
+  description:
+    "Given item weights, item values, and a knapsack capacity, return the maximum total value obtainable by " +
+    "choosing a subset of items (each usable at most once) whose total weight doesn't exceed the capacity.",
+  fnName: "knapsack",
+  starterCode: "function knapsack(weights, values, capacity) {\n  \n}",
+  testCases: [
+    { input: [[1, 3, 4, 5], [1, 4, 5, 7], 7], expected: 9 },
+    { input: [[2, 3, 4, 5], [3, 4, 5, 6], 5], expected: 7 },
+    { input: [[1, 2, 3], [6, 10, 12], 5], expected: 22 },
+    { input: [[5], [10], 4], expected: 0 },
+    { input: [[], [], 10], expected: 0 },
+  ],
+  solution:
+    "function knapsack(weights, values, capacity) {\n" +
+    "  const n = weights.length;\n" +
+    "  const dp = Array.from({ length: n + 1 }, () => new Array(capacity + 1).fill(0));\n" +
+    "  for (let i = 1; i <= n; i++) {\n" +
+    "    for (let w = 0; w <= capacity; w++) {\n" +
+    "      dp[i][w] = dp[i - 1][w];\n" +
+    "      if (weights[i - 1] <= w) {\n" +
+    "        dp[i][w] = Math.max(dp[i][w], dp[i - 1][w - weights[i - 1]] + values[i - 1]);\n" +
+    "      }\n" +
+    "    }\n" +
+    "  }\n" +
+    "  return dp[n][capacity];\n" +
+    "}",
+  solutions: [
+    {
+      approach: "2D dynamic programming",
+      timeComplexity: "O(n · capacity)",
+      spaceComplexity: "O(n · capacity) — the full grid",
+      explanation:
+        "dp[i][w] is the best value achievable using the first i items within weight w. Each item is either " +
+        "left out (carry forward dp[i-1][w]) or taken (its value plus the best from the remaining capacity) " +
+        "— every (item, weight) combination is resolved exactly once.",
+      code:
+        "function knapsack(weights, values, capacity) {\n" +
+        "  const n = weights.length;\n" +
+        "  const dp = Array.from({ length: n + 1 }, () => new Array(capacity + 1).fill(0));\n" +
+        "  for (let i = 1; i <= n; i++) {\n" +
+        "    for (let w = 0; w <= capacity; w++) {\n" +
+        "      dp[i][w] = dp[i - 1][w];\n" +
+        "      if (weights[i - 1] <= w) {\n" +
+        "        dp[i][w] = Math.max(dp[i][w], dp[i - 1][w - weights[i - 1]] + values[i - 1]);\n" +
+        "      }\n" +
+        "    }\n" +
+        "  }\n" +
+        "  return dp[n][capacity];\n" +
+        "}",
+    },
+    {
+      approach: "Naive recursion (no memoization)",
+      timeComplexity: "O(2ⁿ) worst case",
+      spaceComplexity: "O(n) recursion stack",
+      explanation:
+        "Same take/skip recurrence explored top-down with no cache — the same (item index, remaining " +
+        "capacity) state is recomputed from every path that reaches it, so the branching factor of two per " +
+        "item makes the work exponential in the number of items.",
+      code:
+        "function knapsack(weights, values, capacity) {\n" +
+        "  function helper(i, remaining) {\n" +
+        "    if (i === weights.length || remaining === 0) return 0;\n" +
+        "    if (weights[i] > remaining) return helper(i + 1, remaining);\n" +
+        "    return Math.max(helper(i + 1, remaining), values[i] + helper(i + 1, remaining - weights[i]));\n" +
+        "  }\n" +
+        "  return helper(0, capacity);\n" +
+        "}",
+    },
+  ],
+};
+
+const robTreeProblem: Problem = {
+  id: "dp-house-robber-tree",
+  title: "House Robber III",
+  difficulty: "Medium",
+  description:
+    "Houses in a neighborhood form a binary tree (given as a level-order array with null for missing " +
+    "children). Directly-connected houses (parent and child) can't both be robbed. Return the maximum total " +
+    "that can be robbed.",
+  fnName: "robTree",
+  starterCode: "function robTree(arr) {\n  \n}",
+  testCases: [
+    { input: [[3, 2, 3, null, 3, null, 1]], expected: 7 },
+    { input: [[3, 4, 5, 1, 3, null, 1]], expected: 9 },
+    { input: [[]], expected: 0 },
+    { input: [[5]], expected: 5 },
+    { input: [[4, 1, null, 2, null, 3]], expected: 7 },
+  ],
+  solution:
+    "function robTree(arr) {\n" +
+    "  function buildTree(a) {\n" +
+    "    if (!a.length || a[0] === null) return null;\n" +
+    "    const root = { val: a[0], left: null, right: null };\n" +
+    "    const queue = [root];\n" +
+    "    let i = 1;\n" +
+    "    while (queue.length && i < a.length) {\n" +
+    "      const node = queue.shift();\n" +
+    "      if (i < a.length) {\n" +
+    "        const leftVal = a[i++];\n" +
+    "        if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+    "      }\n" +
+    "      if (i < a.length) {\n" +
+    "        const rightVal = a[i++];\n" +
+    "        if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+    "      }\n" +
+    "    }\n" +
+    "    return root;\n" +
+    "  }\n" +
+    "  const root = buildTree(arr);\n" +
+    "  function helper(node) {\n" +
+    "    if (!node) return [0, 0];\n" +
+    "    const left = helper(node.left);\n" +
+    "    const right = helper(node.right);\n" +
+    "    const notRobbed = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);\n" +
+    "    const robbed = node.val + left[0] + right[0];\n" +
+    "    return [notRobbed, robbed];\n" +
+    "  }\n" +
+    "  const [notRobbed, robbed] = helper(root);\n" +
+    "  return Math.max(notRobbed, robbed);\n" +
+    "}",
+  solutions: [
+    {
+      approach: "Post-order DP returning a (skip, take) pair",
+      timeComplexity: "O(n)",
+      spaceComplexity: "O(h) recursion stack (h = tree height)",
+      explanation:
+        "Each node reports two numbers to its parent: the best total if this node is NOT robbed, and the " +
+        "best total if it IS robbed. A parent that robs itself can only use its children's 'not robbed' " +
+        "totals; a parent that doesn't rob itself takes the better of each child's two options. Every node " +
+        "is visited exactly once.",
+      code:
+        "function robTree(arr) {\n" +
+        "  function buildTree(a) {\n" +
+        "    if (!a.length || a[0] === null) return null;\n" +
+        "    const root = { val: a[0], left: null, right: null };\n" +
+        "    const queue = [root];\n" +
+        "    let i = 1;\n" +
+        "    while (queue.length && i < a.length) {\n" +
+        "      const node = queue.shift();\n" +
+        "      if (i < a.length) {\n" +
+        "        const leftVal = a[i++];\n" +
+        "        if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "      }\n" +
+        "      if (i < a.length) {\n" +
+        "        const rightVal = a[i++];\n" +
+        "        if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "      }\n" +
+        "    }\n" +
+        "    return root;\n" +
+        "  }\n" +
+        "  const root = buildTree(arr);\n" +
+        "  function helper(node) {\n" +
+        "    if (!node) return [0, 0];\n" +
+        "    const left = helper(node.left);\n" +
+        "    const right = helper(node.right);\n" +
+        "    const notRobbed = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);\n" +
+        "    const robbed = node.val + left[0] + right[0];\n" +
+        "    return [notRobbed, robbed];\n" +
+        "  }\n" +
+        "  const [notRobbed, robbed] = helper(root);\n" +
+        "  return Math.max(notRobbed, robbed);\n" +
+        "}",
+    },
+    {
+      approach: "Naive recursion (no memoization)",
+      timeComplexity: "O(2ʰ) worst case (h = tree height) — grandchildren subtrees get recomputed",
+      spaceComplexity: "O(h) recursion stack",
+      explanation:
+        "Each node independently recomputes 'rob this node' (which needs its grandchildren, not just its " +
+        "children) versus 'don't rob this node' (which recurses into both children fresh) — the same " +
+        "subtrees get walked repeatedly instead of being resolved once and reused, unlike the pair-returning " +
+        "version.",
+      code:
+        "function robTree(arr) {\n" +
+        "  function buildTree(a) {\n" +
+        "    if (!a.length || a[0] === null) return null;\n" +
+        "    const root = { val: a[0], left: null, right: null };\n" +
+        "    const queue = [root];\n" +
+        "    let i = 1;\n" +
+        "    while (queue.length && i < a.length) {\n" +
+        "      const node = queue.shift();\n" +
+        "      if (i < a.length) {\n" +
+        "        const leftVal = a[i++];\n" +
+        "        if (leftVal !== null) { node.left = { val: leftVal, left: null, right: null }; queue.push(node.left); }\n" +
+        "      }\n" +
+        "      if (i < a.length) {\n" +
+        "        const rightVal = a[i++];\n" +
+        "        if (rightVal !== null) { node.right = { val: rightVal, left: null, right: null }; queue.push(node.right); }\n" +
+        "      }\n" +
+        "    }\n" +
+        "    return root;\n" +
+        "  }\n" +
+        "  const root = buildTree(arr);\n" +
+        "  function helper(node) {\n" +
+        "    if (!node) return 0;\n" +
+        "    let robThis = node.val;\n" +
+        "    if (node.left) { robThis += helper(node.left.left) + helper(node.left.right); }\n" +
+        "    if (node.right) { robThis += helper(node.right.left) + helper(node.right.right); }\n" +
+        "    const notRobThis = helper(node.left) + helper(node.right);\n" +
+        "    return Math.max(robThis, notRobThis);\n" +
+        "  }\n" +
+        "  return helper(root);\n" +
+        "}",
+    },
+  ],
+};
+
+const dynamicProgramming: Pattern = {
+  id: "dynamic-programming",
+  name: "Dynamic Programming",
+  subpatterns: [
+    {
+      id: "dynamic-programming-1d",
+      name: "1D",
+      explanation:
+        "A single index sweep where each state depends on a fixed number of earlier states — the whole dp " +
+        "array often collapses down to just a couple of running variables.",
+      problems: [robProblem],
+    },
+    {
+      id: "dynamic-programming-2d",
+      name: "2D",
+      explanation:
+        "Two indices moving together — usually two sequences being compared or two dimensions of a grid — " +
+        "so the state is naturally a table, and each cell is filled from a small set of neighboring cells.",
+      problems: [longestCommonSubsequenceProblem],
+    },
+    {
+      id: "dynamic-programming-knapsack",
+      name: "Knapsack",
+      explanation:
+        "Choosing a subset of items under a capacity constraint. The state is (items considered, capacity " +
+        "used so far), and each item is either skipped or taken — the classic take/skip DP shape.",
+      problems: [knapsackProblem],
+    },
+    {
+      id: "dynamic-programming-dp-on-trees",
+      name: "DP on Trees",
+      explanation:
+        "The state now lives at each tree node instead of an array index, and children must be resolved " +
+        "before their parent — a post-order traversal that returns a small summary per node (rather than one " +
+        "flat table) is the natural way to avoid recomputation.",
+      problems: [robTreeProblem],
+    },
+  ],
+};
 
 const greedy = stub("greedy", "Greedy", ["Activity Selection", "Interval Scheduling", "Huffman Coding"]);
 
