@@ -82,6 +82,89 @@ Generalizes beyond this project: any time "does this work on a real phone/device
 for something running locally, this is the fast way to get there — much lighter than deploying
 somewhere real just to test.
 
+## Capacitor vs React Native vs Flutter — engineering tradeoffs (deep dive)
+
+The Axis A table above answers "what does each approach cost to set up." This section
+answers the harder question: if this were a real product decision (not a learning tour
+through all three), which one, and why — with the tradeoffs stated at the level you'd
+want for an interview answer, not just a feature checklist.
+
+### 1. What "cross-platform" actually means, mechanically
+
+| | Capacitor | React Native | Flutter |
+|---|---|---|---|
+| **Runtime** | A real native WebView (WKWebView on iOS, Chromium WebView on Android) hosting the actual built web app. | JS thread talks to native UI components through the New Architecture's JSI (JavaScript Interface) — no bridge serialization anymore, direct synchronous calls. | Dart compiles to native ARM/x86 machine code (AOT in release builds); Flutter draws every pixel itself via Skia/Impeller — it never touches the platform's native UI toolkit at all. |
+| **UI is** | DOM/CSS, exactly like the browser. | Real native views (`UIView`/`android.view.View`) — a `<Text>` becomes an actual native label. | Flutter's own widgets, rendered to a canvas — visually identical across platforms because nothing platform-native is used. |
+| **What this means practically** | Native *chrome* (statusbar, permissions, app icon, store listing) around a web app. Scrolling, animation, and layout performance are bounded by WebView rendering, same as a browser tab. | Native performance ceiling for UI (it *is* native views), while app logic stays in JS. The old bridge-serialization tax (the historical RN performance complaint) is mostly gone post-New-Architecture. | Highest performance ceiling for custom/animated UI since there's no bridge at all and no platform-toolkit constraints — but you inherit zero platform look-and-feel for free; every control is hand-drawn to match. |
+
+### 2. Developer experience & iteration speed
+
+- **Capacitor**: iterate in the browser exactly as today (`npm run dev`), only rebuild/resync (`npx cap sync`) when testing native-only behavior (permissions, native plugins). Fastest inner loop of the three, because 95% of development never touches native tooling at all.
+- **React Native**: Metro bundler + Fast Refresh gives near-instant reload for JS changes; native module changes still need a full native rebuild (Xcode/Gradle), which is slow. Debugging spans two worlds — JS stack traces via Chrome/Flipper, native crashes via Xcode/Android Studio.
+- **Flutter**: hot reload is genuinely excellent — even widget-tree structural changes reload in under a second in most cases, arguably the best DX of the three for UI iteration. But you're writing an entirely new UI layer in a new language, so the *first* pass through has a steep learning curve regardless of reload speed.
+
+### 3. Code reuse — this project's actual constraint, not generic advice
+
+This is the one place generic framework comparisons don't apply directly, because DSA
+Study Buddy isn't a React/Vue/Flutter app already — it's hand-rolled DOM string
+templates (`renderX()` functions in `main.ts` returning HTML strings, no component
+framework at all) plus a set of framework-agnostic data/logic modules
+(`src/data/*.ts`, the runner eval logic).
+
+- **Capacitor reuses 100% of the existing app, unchanged.** The exact same `dist/`
+  output that ships to Cloudflare Pages today is what gets wrapped. Zero UI rewrite.
+- **React Native reuses the *data*, not the *UI*.** Every `render*()` function in
+  `main.ts` is DOM-string-building — none of it ports. The curriculum data, the pattern
+  definitions, the runner's eval logic (`src/data/*.ts`, framework-agnostic TS) does port
+  over conceptually, but every screen gets rebuilt as JSX/RN components from scratch.
+- **Flutter reuses nothing directly.** Data models would need to be re-expressed in
+  Dart (or served over an API instead of imported as TS modules), and the entire UI is a
+  from-scratch build in a new language. Highest rewrite cost of the three, by a wide margin.
+
+### 4. Native plugin ecosystem & platform escape hatches
+
+- **Capacitor**: plugin ecosystem is smaller than RN's, but for this app the plugin
+  surface needed is close to zero (no camera, no native storage beyond what a WebView
+  already offers) — the one real candidate is a future on-device-LLM native plugin (see
+  Axis B above), which would need to be hand-written either way.
+- **React Native**: the deepest, most mature third-party plugin ecosystem of the three —
+  almost anything native has an existing RN wrapper. Meta's own roadmap risk (the
+  framework has been reorganized/rewritten more than once — Fabric, TurboModules, the New
+  Architecture migration) is a real, if diminishing, maintenance tax.
+- **Flutter**: strong and fast-growing plugin ecosystem (`pub.dev`), backed jointly by
+  Google and a large community; less mature than RN's for long-tail native integrations,
+  but the core (camera, storage, networking, on-device ML via `fllama`/`flutter_gemma`,
+  directly relevant to Axis B here) is solid.
+
+### 5. App size, startup time, long-term maintenance
+
+- **Capacitor**: smallest binary of the three for a content-focused app like this one
+  (it's just a thin native shell); startup time is WebView-init plus whatever the web
+  app's own load time already is — no separate native startup cost to reason about.
+- **React Native**: moderate app size (JS engine + bridge runtime bundled in); startup
+  time includes JS bundle parse/execution, mitigated by Hermes' bytecode precompilation.
+  Long-term maintenance means keeping pace with RN's own version upgrades, which have
+  historically been more disruptive than a typical native SDK bump.
+- **Flutter**: larger baseline binary size (ships its own rendering engine, Skia/Impeller,
+  inside the app) but very fast, predictable startup since everything is AOT-compiled
+  native code with no separate bridge/interpreter step. Flutter's own release cadence
+  (stable channel) has been comparatively steady since 2.0.
+
+### 6. Where this actually points, for this project specifically
+
+The mobile-approaches decision log below already chose to walk through all four in order
+(PWA → Capacitor → React Native → Flutter) as a *learning* exercise, not a
+single-framework product decision — that sequencing stands, and this section doesn't
+change it. But if the question ever becomes "if we had to ship ONE mobile app for this
+product, which," the honest answer given the constraints above is **Capacitor**: this
+app's differentiator is its curriculum content and local-LLM buddy feature, not
+platform-native UI polish or animation, and Capacitor is the only one of the three that
+doesn't force a full UI rewrite to get there. React Native would only make sense if this
+were being rebuilt as a React app anyway (it isn't); Flutter would only make sense if
+pixel-perfect custom UI/animation became the actual product differentiator (it isn't,
+today) or as a deliberate Dart-learning exercise (which is exactly the role it already
+has in the sequencing below).
+
 ## Decision log (append-only)
 
 - **2026-07-06** — Chose to explore all four packaging approaches (PWA, Capacitor, RN,
@@ -101,3 +184,11 @@ somewhere real just to test.
   "v4 — Installable on Android + iOS (PWA)" and "Verification (v4)" sections. Next up:
   Capacitor (task #13/#14) — needs a go/no-go on installing Xcode.app + Android Studio/SDK
   + Java + CocoaPods first, none of which are on this machine yet.
+- **2026-07-11** — Added the "Capacitor vs React Native vs Flutter — engineering
+  tradeoffs" deep dive above (owed since 2026-07-07). Doesn't change the existing
+  PWA→Capacitor→RN→Flutter sequencing decision — that's still the plan for the learning
+  pass through all four. What it adds: the single-framework recommendation *if* this were
+  a real product pick instead (Capacitor, because this app's differentiator is content +
+  local-LLM buddy, not platform-native UI, and it's the only one of the three requiring
+  zero UI rewrite of the hand-rolled `main.ts` DOM-string renderer), plus the specific
+  reuse/rewrite cost breakdown per framework against this app's actual code shape.
