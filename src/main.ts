@@ -19,6 +19,7 @@ import { PATTERNS, findProblem } from "./data/curriculum";
 import { ARCHITECTURE_CATEGORIES, ARCHITECTURE_CONCEPT_COUNT } from "./data/architecture";
 import { findDeepDive } from "./data/deepdives";
 import { LANGUAGE_REFS, REFERENCE_ITEM_COUNT, referenceItemCount, type RefLevel } from "./data/reference";
+import { findReferenceDeepDive } from "./data/referenceDeepDives";
 import type { Pattern } from "./data/types";
 import { runTests, formatValue, type RunResult } from "./runner";
 import { isSolved, markSolved, countSolved } from "./progress";
@@ -36,6 +37,7 @@ type Route =
   | { view: "deepDive"; id: string }
   | { view: "reference" }
   | { view: "referenceLang"; langId: string }
+  | { view: "refDeepDive"; id: string }
   | { view: "brain" }
   | { view: "export" }
   | { view: "pattern"; patternId: string }
@@ -50,6 +52,9 @@ function parseRoute(): Route {
   }
   if (parts[0] === "concepts") {
     return { view: "concepts" };
+  }
+  if (parts[0] === "reference" && parts[1] === "deepdive" && parts[2]) {
+    return { view: "refDeepDive", id: parts[2] };
   }
   if (parts[0] === "reference" && parts[1]) {
     return { view: "referenceLang", langId: parts[1] };
@@ -229,7 +234,7 @@ function renderSidebar(route: Route): string {
   }).join("");
 
   const conceptsActive = route.view === "concepts" ? " active" : "";
-  const referenceActive = route.view === "reference" || route.view === "referenceLang" ? " active" : "";
+  const referenceActive = route.view === "reference" || route.view === "referenceLang" || route.view === "refDeepDive" ? " active" : "";
   const brainActive = route.view === "brain" ? " active" : "";
 
   return `
@@ -267,6 +272,7 @@ function renderContent(route: Route): string {
   if (route.view === "deepDive") return renderDeepDivePage(route.id);
   if (route.view === "reference") return renderReferenceList();
   if (route.view === "referenceLang") return renderReferenceDetail(route.langId);
+  if (route.view === "refDeepDive") return renderRefDeepDivePage(route.id);
   if (route.view === "brain") return renderBrainPage();
   if (route.view === "export") return renderExportPage();
   if (route.view === "pattern") return renderPatternDetail(route.patternId);
@@ -418,20 +424,121 @@ function renderConceptsPage(): string {
   `;
 }
 
+/** Hand-drawn SVG visual for a specific deep-dive strategy. Empty string = no visual yet, fall back to ASCII. */
+function renderStrategyVisual(strategyName: string): string {
+  const wrap = (inner: string, caption: string): string => `
+    <div class="strategy-diagram-wrap">
+      <svg class="strategy-diagram" viewBox="0 0 300 128" xmlns="http://www.w3.org/2000/svg">${inner}</svg>
+      <p class="strategy-diagram-caption">${escapeHtml(caption)}</p>
+    </div>
+  `;
+
+  switch (strategyName) {
+    case "Fixed Window Counter":
+      return wrap(
+        `
+          <rect x="6" y="20" width="88" height="80" class="sd-box"></rect>
+          <rect x="106" y="20" width="88" height="80" class="sd-box"></rect>
+          <rect x="206" y="20" width="88" height="80" class="sd-box"></rect>
+          <text x="50" y="114" text-anchor="middle" class="sd-label">0&ndash;60s</text>
+          <text x="150" y="114" text-anchor="middle" class="sd-label">60&ndash;120s</text>
+          <text x="250" y="114" text-anchor="middle" class="sd-label">120&ndash;180s</text>
+          <polyline points="14,94 94,28 106,94 194,28 206,94 286,28" class="sd-line"></polyline>
+          <circle cx="94" cy="28" r="4" class="sd-warn-dot"></circle>
+          <circle cx="106" cy="94" r="4" class="sd-warn-dot"></circle>
+          <text x="150" y="10" text-anchor="middle" class="sd-warn-label">boundary burst: up to 2&times; limit</text>
+        `,
+        "The counter resets hard at each window edge — a burst right before and right after the boundary can slip through at close to 2× the limit."
+      );
+    case "Sliding Window Log":
+      return wrap(
+        `
+          <rect x="14" y="50" width="272" height="20" class="sd-window"></rect>
+          <line x1="14" y1="60" x2="286" y2="60" class="sd-timeline"></line>
+          <circle cx="40" cy="60" r="4" class="sd-dot"></circle>
+          <circle cx="115" cy="60" r="4" class="sd-dot"></circle>
+          <circle cx="200" cy="60" r="4" class="sd-dot"></circle>
+          <circle cx="255" cy="60" r="4" class="sd-dot"></circle>
+          <text x="14" y="40" class="sd-label">t&minus;60s</text>
+          <text x="286" y="40" text-anchor="end" class="sd-label">now</text>
+          <text x="150" y="90" text-anchor="middle" class="sd-note">each dot = one request timestamp, kept until it ages out</text>
+          <text x="150" y="108" text-anchor="middle" class="sd-note">log.length &lt; limit &rarr; allow</text>
+        `,
+        "Every request is timestamped and logged; drop anything older than the window, then compare the log's length to the limit. Exact, but memory grows with request volume."
+      );
+    case "Sliding Window Counter":
+      return wrap(
+        `
+          <rect x="10" y="24" width="130" height="60" class="sd-box-dim"></rect>
+          <rect x="150" y="24" width="130" height="60" class="sd-box"></rect>
+          <rect x="100" y="24" width="50" height="60" class="sd-overlap"></rect>
+          <text x="75" y="18" text-anchor="middle" class="sd-label">prev window</text>
+          <text x="215" y="18" text-anchor="middle" class="sd-label">current window</text>
+          <text x="125" y="102" text-anchor="middle" class="sd-note">overlap weighted into the count</text>
+          <text x="150" y="118" text-anchor="middle" class="sd-note">weighted = prevCount&times;overlap + currCount</text>
+        `,
+        "Only two fixed counters are kept — the previous window's count is weighted by how much it still overlaps the sliding window, approximating the log without storing every timestamp."
+      );
+    case "Token Bucket":
+      return wrap(
+        `
+          <text x="150" y="10" text-anchor="middle" class="sd-note">refill: 10 tokens/sec</text>
+          <line x1="150" y1="14" x2="150" y2="20" class="sd-arrow-line"></line>
+          <polygon points="146,14 154,14 150,20" class="sd-arrowhead"></polygon>
+          <path d="M110,24 L190,24 L178,92 L122,92 Z" class="sd-bucket"></path>
+          <circle cx="136" cy="46" r="5" class="sd-token"></circle>
+          <circle cx="157" cy="43" r="5" class="sd-token"></circle>
+          <circle cx="146" cy="62" r="5" class="sd-token"></circle>
+          <circle cx="165" cy="60" r="5" class="sd-token"></circle>
+          <circle cx="132" cy="76" r="5" class="sd-token-empty"></circle>
+          <circle cx="160" cy="78" r="5" class="sd-token-empty"></circle>
+          <line x1="150" y1="94" x2="150" y2="108" class="sd-arrow-line"></line>
+          <polygon points="146,102 154,102 150,108" class="sd-arrowhead"></polygon>
+          <text x="150" y="122" text-anchor="middle" class="sd-note">&minus;1 token / request, reject if empty</text>
+        `,
+        "Tokens refill at a steady rate; a request is allowed only if the bucket still has a token. Bursts up to the bucket's size pass through, while the long-run rate stays capped."
+      );
+    case "Leaky Bucket":
+      return wrap(
+        `
+          <text x="150" y="10" text-anchor="middle" class="sd-note">requests queue in</text>
+          <line x1="130" y1="14" x2="130" y2="20" class="sd-arrow-line"></line>
+          <polygon points="126,14 134,14 130,20" class="sd-arrowhead"></polygon>
+          <line x1="170" y1="14" x2="170" y2="20" class="sd-arrow-line"></line>
+          <polygon points="166,14 174,14 170,20" class="sd-arrowhead"></polygon>
+          <path d="M110,24 L190,24 L178,92 L122,92 Z" class="sd-bucket"></path>
+          <circle cx="216" cy="30" r="4" class="sd-warn-dot"></circle>
+          <text x="228" y="34" class="sd-note-warn">full &rarr; reject</text>
+          <line x1="150" y1="94" x2="150" y2="108" class="sd-arrow-line"></line>
+          <polygon points="146,102 154,102 150,108" class="sd-arrowhead"></polygon>
+          <text x="150" y="122" text-anchor="middle" class="sd-note">leaks out at one fixed rate</text>
+        `,
+        "Requests queue into a fixed-size bucket that drains at a constant rate. New requests are dropped once the bucket is full — this smooths bursts into one steady output rate instead of letting them through."
+      );
+    default:
+      return "";
+  }
+}
+
 function renderDeepDivePage(id: string): string {
   const dive = findDeepDive(id);
   if (!dive) return renderNotFound("Deep dive not found.");
 
   const strategies = dive.strategies
-    .map(
-      (s) => `
+    .map((s) => {
+      const visual = renderStrategyVisual(s.name);
+      return `
         <section class="deepdive-strategy">
           <h3 class="deepdive-strategy-name">${escapeHtml(s.name)}</h3>
           <p class="deepdive-strategy-desc">${escapeHtml(s.description)}</p>
           <div class="deepdive-panels">
             <div class="deepdive-panel">
               <span class="deepdive-panel-label">Flow</span>
-              <pre class="deepdive-diagram">${escapeHtml(s.diagram)}</pre>
+              ${
+                visual
+                  ? visual
+                  : `<pre class="deepdive-diagram">${escapeHtml(s.diagram)}</pre>`
+              }
             </div>
             <div class="deepdive-panel">
               <span class="deepdive-panel-label">Code</span>
@@ -439,14 +546,23 @@ function renderDeepDivePage(id: string): string {
             </div>
           </div>
         </section>
-      `
-    )
+      `;
+    })
     .join("");
+
+  const practiceCta = dive.practiceSubId
+    ? `
+      <a class="deepdive-practice-cta" href="#/pattern/system-design/sub/${dive.practiceSubId}">
+        Practice this &rarr; solve the graded problems for ${escapeHtml(dive.title)}
+      </a>
+    `
+    : "";
 
   return `
     <p class="breadcrumb"><a href="#/concepts">System Design Concepts</a></p>
     <h1>${escapeHtml(dive.title)}</h1>
     <p class="lead">${escapeHtml(dive.intro)}</p>
+    ${practiceCta}
     <div class="deepdive-strategy-list">${strategies}</div>
   `;
 }
@@ -499,18 +615,21 @@ function renderReferenceDetail(langId: string): string {
   const groups = lang.categories
     .map((cat) => {
       const rows = cat.items
-        .map(
-          (item) => `
+        .map((item) => {
+          const name = item.deepDiveId
+            ? `<a class="ref-item-name ref-item-name--linked" href="#/reference/deepdive/${item.deepDiveId}">${escapeHtml(item.name)} &rarr;</a>`
+            : `<span class="ref-item-name">${escapeHtml(item.name)}</span>`;
+          return `
             <div class="ref-item">
               <div class="ref-item-head">
-                <span class="ref-item-name">${escapeHtml(item.name)}</span>
+                ${name}
                 <span class="ref-level-badge ref-level-badge--${item.level}">${LEVEL_LABEL[item.level]}</span>
               </div>
               <p class="ref-item-summary">${escapeHtml(item.summary)}</p>
               ${item.example ? `<code class="ref-item-example">${escapeHtml(item.example)}</code>` : ""}
             </div>
-          `
-        )
+          `;
+        })
         .join("");
       return `
         <section class="concept-group">
@@ -530,6 +649,39 @@ function renderReferenceDetail(langId: string): string {
       listed here? Ask the buddy panel.
     </p>
     <div class="concept-groups">${groups}</div>
+  `;
+}
+
+function renderRefDeepDivePage(id: string): string {
+  const dive = findReferenceDeepDive(id);
+  if (!dive) return renderNotFound("Reference deep dive not found.");
+
+  const lang = LANGUAGE_REFS.find((l) => l.id === dive.langId);
+  const gotchas = dive.gotchas.map((g) => `<li>${escapeHtml(g)}</li>`).join("");
+  const related = dive.related?.length
+    ? `
+      <p class="refdive-related">
+        <span class="deepdive-panel-label">Related</span>
+        ${dive.related.map((r) => `<code class="ref-item-example">${escapeHtml(r)}</code>`).join(" &middot; ")}
+      </p>
+    `
+    : "";
+
+  return `
+    <p class="breadcrumb"><a href="#/reference/${dive.langId}">${escapeHtml(lang?.name ?? dive.langId)}</a></p>
+    <h1>${escapeHtml(dive.title)}</h1>
+    <p class="lead">${escapeHtml(dive.intro)}</p>
+    <div class="deepdive-panels">
+      <div class="deepdive-panel refdive-gotchas-panel">
+        <span class="deepdive-panel-label">Gotchas</span>
+        <ul class="refdive-gotchas">${gotchas}</ul>
+      </div>
+      <div class="deepdive-panel">
+        <span class="deepdive-panel-label">Code</span>
+        <pre class="deepdive-code"><code>${escapeHtml(dive.code)}</code></pre>
+      </div>
+    </div>
+    ${related}
   `;
 }
 

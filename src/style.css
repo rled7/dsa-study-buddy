@@ -709,6 +709,37 @@ button {
   color: var(--accent);
 }
 
+.ref-item-name--linked {
+  text-decoration: none;
+  cursor: pointer;
+}
+.ref-item-name--linked:hover {
+  color: var(--accent);
+}
+
+.refdive-gotchas {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+.refdive-gotchas li {
+  margin-bottom: 0.5rem;
+}
+.refdive-gotchas li:last-child {
+  margin-bottom: 0;
+}
+.refdive-related {
+  margin-top: 1.1rem;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+.refdive-related .ref-item-example {
+  display: inline;
+  color: #d1f7f0;
+}
+
 /* ─── System-design deep dives (e.g. Caching Strategies) ───────────────── */
 .deepdive-strategy-list {
   display: flex;
@@ -766,4 +797,120 @@ button {
 }
 .deepdive-code {
   color: var(--text);
+}
+
+.deepdive-practice-cta {
+  display: inline-block;
+  margin: 0.9rem 0 0.25rem;
+  padding: 0.5rem 0.9rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+.deepdive-practice-cta:hover {
+  background: var(--accent-dim);
+}
+
+/* ─── Hand-drawn strategy visuals (SVG, replaces ASCII where authored) ──── */
+.strategy-diagram-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.strategy-diagram {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.strategy-diagram-caption {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.sd-box {
+  fill: var(--bg-elevated-2);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.sd-box-dim {
+  fill: var(--bg-elevated);
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+.sd-overlap {
+  fill: var(--accent);
+  opacity: 0.22;
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.sd-window {
+  fill: var(--accent);
+  opacity: 0.12;
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.sd-timeline {
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.sd-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+.sd-divider {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.sd-dot {
+  fill: var(--accent);
+}
+.sd-warn-dot {
+  fill: var(--danger);
+}
+.sd-warn-label {
+  fill: var(--danger);
+  font-size: 9px;
+  font-family: inherit;
+}
+.sd-label {
+  fill: var(--text-dim);
+  font-size: 9.5px;
+  font-family: inherit;
+}
+.sd-note {
+  fill: var(--text-dim);
+  font-size: 9px;
+  font-family: inherit;
+}
+.sd-note-warn {
+  fill: var(--danger);
+  font-size: 9px;
+  font-family: inherit;
+}
+.sd-bucket {
+  fill: var(--bg-elevated-2);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.sd-token {
+  fill: var(--accent);
+}
+.sd-token-empty {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 2 1.5;
+}
+.sd-arrow-line {
+  stroke: var(--border);
+  stroke-width: 1.5;
+}
+.sd-arrowhead {
+  fill: var(--border);
 }

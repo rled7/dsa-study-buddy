@@ -22,6 +22,8 @@ export interface RefItem {
   summary: string;
   /** Optional short usage example. */
   example?: string;
+  /** If set, the item links to a fuller ReferenceDeepDive (see ./referenceDeepDives.ts) instead of rendering as plain text. */
+  deepDiveId?: string;
 }
 
 export interface RefCategory {
@@ -58,15 +60,15 @@ const javascript: LanguageRef = {
         { name: "slice(start, end)", level: "beginner", summary: "Shallow copy of a portion; does not mutate the original." },
         { name: "map(fn)", level: "intermediate", summary: "New array with fn applied to every item." },
         { name: "filter(fn)", level: "intermediate", summary: "New array of items where fn returns true." },
-        { name: "reduce(fn, init)", level: "intermediate", summary: "Fold the array down to a single value, left to right." },
+        { name: "reduce(fn, init)", level: "intermediate", summary: "Fold the array down to a single value, left to right.", deepDiveId: "js-reduce" },
         { name: "forEach(fn)", level: "intermediate", summary: "Run fn on every item; returns undefined — no chaining." },
         { name: "find(fn) / findIndex(fn)", level: "intermediate", summary: "First matching item (or its index), or undefined/-1." },
         { name: "some(fn) / every(fn)", level: "intermediate", summary: "True if fn holds for at least one / all items." },
-        { name: "sort(fn)", level: "intermediate", summary: "Sorts in place; without a comparator it sorts as strings — [10,2].sort() gives [10,2], not [2,10]." },
+        { name: "sort(fn)", level: "intermediate", summary: "Sorts in place; without a comparator it sorts as strings — [10,2].sort() gives [10,2], not [2,10].", deepDiveId: "js-sort" },
         { name: "concat(other)", level: "intermediate", summary: "New array combining this with other array(s), no mutation." },
         { name: "flat(depth) / flatMap(fn)", level: "intermediate", summary: "Flatten nested arrays; flatMap is map() then flat(1) in one pass." },
         { name: "join(sep)", level: "intermediate", summary: "Join items into a string with sep as separator." },
-        { name: "splice(start, count, ...items)", level: "intermediate", summary: "Remove/insert in place; returns removed items — the only method that both mutates and inserts." },
+        { name: "splice(start, count, ...items)", level: "intermediate", summary: "Remove/insert in place; returns removed items — the only method that both mutates and inserts.", deepDiveId: "js-splice" },
         { name: "Array.from(iterable)", level: "advanced", summary: "Build a real array from an iterable or array-like (NodeList, arguments, a Set)." },
         { name: "Array.of(...items)", level: "advanced", summary: "Build from arguments directly, avoiding the new Array(7) 'length 7' footgun." },
         { name: "reduceRight(fn, init)", level: "advanced", summary: "Like reduce but folds right to left." },
@@ -154,10 +156,10 @@ const javascript: LanguageRef = {
         { name: ".then / .catch / .finally", level: "beginner", summary: "React to a Promise's fulfillment, rejection, or either." },
         { name: "async/await", level: "beginner", summary: "Syntactic sugar over Promises — await pauses the async function until the Promise settles." },
         { name: "try/catch around await", level: "intermediate", summary: "How you catch rejections with async/await instead of .catch()." },
-        { name: "Promise.all(promises)", level: "intermediate", summary: "Run in parallel, resolves when ALL succeed, rejects immediately if ANY fails." },
-        { name: "Promise.allSettled(promises)", level: "intermediate", summary: "Run in parallel, always resolves with each result's status — never short-circuits on failure." },
-        { name: "Promise.race(promises)", level: "intermediate", summary: "Settles as soon as the first promise settles, fulfilled or rejected." },
-        { name: "Promise.any(promises)", level: "advanced", summary: "Settles on the first fulfillment; rejects only if ALL reject (AggregateError)." },
+        { name: "Promise.all(promises)", level: "intermediate", summary: "Run in parallel, resolves when ALL succeed, rejects immediately if ANY fails.", deepDiveId: "js-promise-combinators" },
+        { name: "Promise.allSettled(promises)", level: "intermediate", summary: "Run in parallel, always resolves with each result's status — never short-circuits on failure.", deepDiveId: "js-promise-combinators" },
+        { name: "Promise.race(promises)", level: "intermediate", summary: "Settles as soon as the first promise settles, fulfilled or rejected.", deepDiveId: "js-promise-combinators" },
+        { name: "Promise.any(promises)", level: "advanced", summary: "Settles on the first fulfillment; rejects only if ALL reject (AggregateError).", deepDiveId: "js-promise-combinators" },
         { name: "Microtask vs. macrotask ordering", level: "advanced", summary: "Promise callbacks run before setTimeout callbacks, even setTimeout(fn, 0) — explains surprising execution order." },
         { name: "AbortController", level: "advanced", summary: "Standard cancellation signal, e.g. to cancel a fetch() or your own long-running async work." },
         { name: "Async generators / for await...of", level: "advanced", summary: "Iterate an async sequence (e.g. paginated API results) with normal for-loop syntax." },
@@ -171,7 +173,7 @@ const javascript: LanguageRef = {
         { name: "Arrow functions", level: "beginner", summary: "No own this/arguments — inherits from the enclosing scope, which is why they're wrong for object methods needing this." },
         { name: "Default parameters", level: "beginner", summary: "function f(x = 1) — fallback used only when the argument is undefined." },
         { name: "Rest parameters (...args)", level: "beginner", summary: "Collect remaining arguments into a real array." },
-        { name: "Closures", level: "intermediate", summary: "A function remembers variables from its enclosing scope even after that scope has returned — the basis of private state without classes." },
+        { name: "Closures", level: "intermediate", summary: "A function remembers variables from its enclosing scope even after that scope has returned — the basis of private state without classes.", deepDiveId: "js-closures" },
         { name: "Higher-order functions", level: "intermediate", summary: "Functions that take or return other functions (map/filter/reduce are all HOFs)." },
         { name: "Currying", level: "intermediate", summary: "Transforming f(a, b, c) into f(a)(b)(c) — enables partial application." },
         { name: "call / apply / bind", level: "advanced", summary: "Explicitly set what this refers to; apply/call invoke immediately, bind returns a new bound function." },
@@ -199,7 +201,7 @@ const javascript: LanguageRef = {
       name: "Iterators & Generators",
       items: [
         { name: "for...of", level: "intermediate", summary: "Iterates values directly — vs. for...in, which iterates enumerable keys including inherited ones, the classic footgun." },
-        { name: "Symbol.iterator protocol", level: "advanced", summary: "Implement it to make your own class work with for...of and spread." },
+        { name: "Symbol.iterator protocol", level: "advanced", summary: "Implement it to make your own class work with for...of and spread.", deepDiveId: "js-iterator-protocol" },
         { name: "yield*", level: "advanced", summary: "Delegate to another generator/iterable from within a generator." },
       ],
     },

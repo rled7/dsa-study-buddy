@@ -20,6 +20,8 @@ export interface DeepDive {
   title: string;
   intro: string;
   strategies: DeepDiveStrategy[];
+  /** Sub-pattern id (under the "system-design" pattern) with a hands-on practice problem for this topic. */
+  practiceSubId?: string;
 }
 
 export const DEEP_DIVES: DeepDive[] = [
@@ -309,6 +311,7 @@ export const DEEP_DIVES: DeepDive[] = [
       "algorithms differ mainly in how precisely they track time and whether they allow short bursts " +
       "through. Simpler algorithms are cheaper but let bursts slip past window boundaries; more precise " +
       "ones cost more memory or computation per request.",
+    practiceSubId: "sysdes-traffic-control",
     strategies: [
       {
         name: "Fixed Window Counter",
